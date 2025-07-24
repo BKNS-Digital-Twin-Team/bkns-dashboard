@@ -26,7 +26,7 @@ jobs:
     runs-on: [self-hosted, docker-host]
 
     steps:
-      # 1. Клонируем код репозитория.
+      # 1. Клонируем код репозиторияя.
       # Раннер сам скачает последнюю версию кода в свою рабочую папку.
       - name: Checkout repository
         uses: actions/checkout@v4
