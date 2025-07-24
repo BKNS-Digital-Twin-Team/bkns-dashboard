@@ -44,7 +44,6 @@ jobs:
           docker stop digital-twin-app || true
           docker rm digital-twin-app || true
 
-      # 4. Запускаем новый контейнер из только что собранного образа.
       - name: Run new container
         run: |
           docker run -d -p 8080:80 --name digital-twin-app --restart always ${{ github.repository }}:${{ github.sha }}
