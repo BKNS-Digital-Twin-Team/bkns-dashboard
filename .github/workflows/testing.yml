@@ -11,6 +11,7 @@ jobs:
         run: npm ci
 
       - name: Test frontend
+        working-directory: ./frontend
         run: npm run test
 
         
