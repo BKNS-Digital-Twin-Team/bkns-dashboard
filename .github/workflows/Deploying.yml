@@ -1,0 +1,52 @@
+name: Deploy Application on Self-Hosted Runner
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get the repository code
+        uses: actions/checkout@v3
+      - name: Install depencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Test frontend
+        working-directory: ./frontend
+        run: npm run test
+        
+  build-and-deploy:
+    # --- КЛЮЧЕВОЙ МОМЕНТ ---
+    # Указываем, что это задание должно выполняться ТОЛЬКО на раннере
+    # с меткой 'self-hosted' И 'docker-host'.
+    runs-on: [self-hosted, docker-host]
+
+    steps:
+      # 1. Клонируем код репозитория.
+      # Раннер сам скачает последнюю версию кода в свою рабочую папку.
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Собираем Docker-образ локально на сервере.
+      # Мы даем ему уникальное имя, используя хеш коммита.
+      - name: Build Docker image
+        run: docker build -t ${{ github.repository }}:${{ github.sha }} .
+        # github.repository - это ВАШ_НИК/ВАШ_РЕПОЗИТОРИЙ
+        # github.sha - это уникальный хеш последнего коммита
+
+      # 3. Останавливаем и удаляем старый контейнер (если он есть).
+      # '|| true' нужно, чтобы команда не завершилась с ошибкой, если контейнера еще нет.
+      - name: Stop and remove old container
+        run: |
+          docker stop digital-twin-app || true
+          docker rm digital-twin-app || true
+
+      # 4. Запускаем новый контейнер из только что собранного образа.
+      - name: Run new container
+        run: |
+          docker run -d -p 8080:80 --name digital-twin-app --restart always ${{ github.repository }}:${{ github.sha }}
+
+        
