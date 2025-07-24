@@ -19,6 +19,7 @@ jobs:
         run: npm run test
         
   build-and-deploy:
+    needs: test
     # --- КЛЮЧЕВОЙ МОМЕНТ ---
     # Указываем, что это задание должно выполняться ТОЛЬКО на раннере
     # с меткой 'self-hosted' И 'docker-host'.
