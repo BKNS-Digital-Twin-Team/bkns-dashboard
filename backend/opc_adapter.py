@@ -12,22 +12,57 @@ class OPCAdapter:
         # ИСПРАВЛЕНО: Теперь все component_id начинаются с 'pump_'
         # Это нужно, чтобы проверка прав доступа в process_command работала правильно
         self.OPC_NODE_MAPPING = {
-            # --- Насос NA4 (ID 0 в модели) ---
-            "ns=2;i=28": {"mode": "control", "component_id": "pump_0", "param": "na_start"},
-            "ns=2;i=29": {"mode": "control", "component_id": "pump_0", "param": "na_stop"},
-            "ns=2;i=45": {"mode": "control", "component_id": "valve_out_0", "param": "valve_open"}, 
-            "ns=2;i=46": {"mode": "control", "component_id": "valve_out_0", "param": "valve_close"},
-            "ns=2;i=35": {"mode": "control","component_id": "oil_system_0", "param": "oil_pump_start"},
-            # "ns=2;i=??": {"component_id": "pump_0", "param": "oil_pump_stop"}, 
+            # === НАСОС NA4 ===
+            "ns=1;i=101": {"mode": "control", "component_id": "pump_0", "param": "na_start"},
+            "ns=1;i=102": {"mode": "control", "component_id": "pump_0", "param": "na_stop"},
+            "ns=1;i=103": {"mode": "status",  "component_id": "pump_0", "param": "na_on"},
+            "ns=1;i=104": {"mode": "status",  "component_id": "pump_0", "param": "na_off"},
+            "ns=1;i=105": {"mode": "monitor", "component_id": "pump_0", "param": "motor_current"},
+            "ns=1;i=106": {"mode": "monitor", "component_id": "pump_0", "param": "pressure_in"},
+            "ns=1;i=107": {"mode": "monitor", "component_id": "pump_0", "param": "pressure_out"},
+            "ns=1;i=108": {"mode": "monitor", "component_id": "pump_0", "param": "temp_bearing_1"},
+            "ns=1;i=109": {"mode": "monitor", "component_id": "pump_0", "param": "cover_open"},
+            "ns=1;i=110": {"mode": "status",  "component_id": "pump_0", "param": "oil_sys_running"},
+            "ns=1;i=111": {"mode": "status",  "component_id": "pump_0", "param": "oil_sys_pressure_ok"},
+            "ns=1;i=112": {"mode": "monitor", "component_id": "pump_0", "param": "oil_pressure"},
+            "ns=1;i=113": {"mode": "monitor", "component_id": "pump_0", "param": "temp_bearing_2"},
+            "ns=1;i=114": {"mode": "monitor", "component_id": "pump_0", "param": "temp_motor_1"},
+            "ns=1;i=115": {"mode": "monitor", "component_id": "pump_0", "param": "temp_motor_2"},
+            "ns=1;i=116": {"mode": "monitor", "component_id": "pump_0", "param": "temp_water"},
+            "ns=1;i=117": {"mode": "monitor", "component_id": "pump_0", "param": "flow_rate"},
+            "ns=1;i=118": {"mode": "status",  "component_id": "valve_out_0", "param": "valve_open"},
+            "ns=1;i=119": {"mode": "status",  "component_id": "valve_out_0", "param": "valve_closed"},
+            "ns=1;i=120": {"mode": "control", "component_id": "valve_out_0", "param": "valve_open_cmd"},
+            "ns=1;i=121": {"mode": "control", "component_id": "valve_out_0", "param": "valve_close_cmd"},
+            "ns=1;i=122": {"mode": "control", "component_id": "oil_system_0", "param": "oil_pump_start"},
+            "ns=1;i=123": {"mode": "control", "component_id": "oil_system_0", "param": "oil_pump_stop"},
 
-            # --- Насос NA2 (ID 1 в модели) ---
-            "ns=2;i=2":  {"mode": "control", "component_id": "pump_1", "param": "na_start"},
-            "ns=2;i=3":  {"mode": "control", "component_id": "pump_1", "param": "na_stop"},
-            "ns=2;i=21": {"mode": "control", "component_id": "valve_out_1", "param": "valve_open"},
-            "ns=2;i=22": {"mode": "control", "component_id": "valve_out_1", "param": "valve_close"},
-            "ns=2;i=23": {"mode": "control", "component_id": "oil_system_1", "param": "oil_pump_start"},
-            # "ns=2;i=24": {"component_id": "pump_1", "param": "oil_pump_stop"},
+            # === НАСОС NA2 ===
+            "ns=1;i=201": {"mode": "control", "component_id": "pump_1", "param": "na_start"},
+            "ns=1;i=202": {"mode": "control", "component_id": "pump_1", "param": "na_stop"},
+            "ns=1;i=203": {"mode": "status",  "component_id": "pump_1", "param": "na_on"},
+            "ns=1;i=204": {"mode": "status",  "component_id": "pump_1", "param": "na_off"},
+            "ns=1;i=205": {"mode": "monitor", "component_id": "pump_1", "param": "motor_current"},
+            "ns=1;i=206": {"mode": "monitor", "component_id": "pump_1", "param": "pressure_in"},
+            "ns=1;i=207": {"mode": "monitor", "component_id": "pump_1", "param": "pressure_out"},
+            "ns=1;i=208": {"mode": "monitor", "component_id": "pump_1", "param": "temp_bearing_1"},
+            "ns=1;i=209": {"mode": "monitor", "component_id": "pump_1", "param": "cover_open"},
+            "ns=1;i=210": {"mode": "status",  "component_id": "pump_1", "param": "oil_sys_running"},
+            "ns=1;i=211": {"mode": "status",  "component_id": "pump_1", "param": "oil_sys_pressure_ok"},
+            "ns=1;i=212": {"mode": "monitor", "component_id": "pump_1", "param": "oil_pressure"},
+            "ns=1;i=213": {"mode": "monitor", "component_id": "pump_1", "param": "temp_bearing_2"},
+            "ns=1;i=214": {"mode": "monitor", "component_id": "pump_1", "param": "temp_motor_1"},
+            "ns=1;i=215": {"mode": "monitor", "component_id": "pump_1", "param": "temp_motor_2"},
+            "ns=1;i=216": {"mode": "monitor", "component_id": "pump_1", "param": "temp_water"},
+            "ns=1;i=217": {"mode": "monitor", "component_id": "pump_1", "param": "flow_rate"},
+            "ns=1;i=218": {"mode": "status",  "component_id": "valve_out_1", "param": "valve_open"},
+            "ns=1;i=219": {"mode": "status",  "component_id": "valve_out_1", "param": "valve_closed"},
+            "ns=1;i=220": {"mode": "control", "component_id": "valve_out_1", "param": "valve_open_cmd"},
+            "ns=1;i=221": {"mode": "control", "component_id": "valve_out_1", "param": "valve_close_cmd"},
+            "ns=1;i=222": {"mode": "control", "component_id": "oil_system_1", "param": "oil_pump_start"},
+            "ns=1;i=223": {"mode": "control", "component_id": "oil_system_1", "param": "oil_pump_stop"},
         }
+
 
     async def connect(self):
         print("[OPC Adapter] Подключение...")

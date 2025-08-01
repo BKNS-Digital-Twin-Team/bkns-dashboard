@@ -67,7 +67,7 @@ class ControlLogic:
     def process_command(self, mode: str, source: str, component: str, param: str, value):
         print(f"\n[CONTROL] Команда: source={source}, component={component}, param={param}, value={value}")
 
-        if self.control_modes.get(component) != source:
+        if source != "MODEL" and self.control_modes.get(component) != source:
             print(f"[CONTROL] БЛОКИРОВАНО! Режим для '{component}': {self.control_modes.get(component)}")
             return {"status": "BLOCKED"}
 
@@ -230,15 +230,38 @@ def get_raw_model_status():
     print("[DEBUG] Запрошен полный статус модели.")
     return simulation_manager["main_bkns"].get_status()
     
+
+previous_model_state = {}
+
 async def update_loop():
+    global previous_model_state
     while True:
         try:
             await simulation_is_running.wait()
-            # print("--- Обновление состояния модели ---")
+
             for model_name, model in simulation_manager.items():
                 model.update_system()
-                #print(model.get_status()) 
+                current_state = model.get_status()
+
+                # === Сравниваем с предыдущим состоянием ===
+                for component, params in current_state.items():
+                    for param, value in params.items():
+                        key = (component, param)
+                        prev_value = previous_model_state.get(key)
+
+                        if prev_value != value:
+                            print(f"[MODEL → OPC] Обнаружено изменение: {component}.{param} → {value}")
+                            control_logic.process_command(
+                                mode="sync",
+                                source="MODEL",
+                                component=component,
+                                param=param,
+                                value=value
+                            )
+                            previous_model_state[key] = value
+
             await asyncio.sleep(1)
+
         except asyncio.CancelledError:
             print("[LOOP] Цикл обновления модели остановлен.")
             break
