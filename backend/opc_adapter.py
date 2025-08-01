@@ -5,6 +5,7 @@ from asyncua import Client, ua, Node
 class OPCAdapter:
     def __init__(self, server_url, control_logic, simulation_manager):
         self.client = Client(url=server_url)
+        self.last_sent_values = {}  # {(component_id, param): last_value}
         self.control_logic = control_logic
         self.simulation_manager = simulation_manager
         self.is_running = False 
@@ -108,6 +109,35 @@ class OPCAdapter:
             )
         
         print("\n--- [SYNC] Синхронизация завершена. ---\n")
+    
+    async def send_to_opc(self, component_id, param, value):
+        if not self.is_running:
+            print("[OPC WRITE] Адаптер не подключен.")
+            return
+
+        key = (component_id, param)
+        if self.last_sent_values.get(key) == value:
+            print(f"[OPC WRITE] Значение {component_id}.{param} уже = {value}, пропуск.")
+            return
+
+        # Найдём NodeId по компоненту и параметру
+        node_id = None
+        for nid, info in self.OPC_NODE_MAPPING.items():
+            if info["component_id"] == component_id and info["param"] == param:
+                node_id = nid
+                break
+
+        if node_id is None:
+            print(f"[OPC WRITE] Не найден NodeId для {component_id}.{param}")
+            return
+
+        try:
+            node = self.client.get_node(node_id)
+            await node.write_value(value)
+            self.last_sent_values[key] = value
+            print(f"[OPC WRITE] {component_id}.{param} → {value}")
+        except Exception as e:
+            print(f"[OPC WRITE ERROR] Ошибка записи {component_id}.{param}: {e}")
 
     async def run(self):
         while True:

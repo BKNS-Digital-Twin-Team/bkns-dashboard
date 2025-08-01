@@ -1,19 +1,30 @@
 # main.py
 
+#import
 import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, APIRouter, BackgroundTasks
 from fastapi.staticfiles import StaticFiles # <--- Импортируем StaticFiles
 from fastapi.responses import FileResponse # <--- Импортируем FileResponse
 from pydantic import BaseModel
+from pathlib import Path
+import os
 
 from Math.BKNS import BKNS
 from opc_adapter import OPCAdapter
 
+#events
 simulation_is_running = asyncio.Event()
-SERVER_URL = "opc.tcp://10.0.22.154:4840"
 
+#server_url
+SERVER_URL = os.getenv("OPC_SERVER_URL")
+if SERVER_URL is None:
+    SERVER_URL = "opc.tcp://localhost:4840"
+
+#simulation manager
 simulation_manager = {"main_bkns": BKNS()}
+
+#start initialization
 control_logic = None  # Объявляем переменную
 opc_adapter = None    # Объявляем переменную
 
@@ -27,6 +38,7 @@ class SetModeCommand(BaseModel):
 
 class ControlLogic:
     def __init__(self):
+        self.state_cache = {}  # Сохраняем последние значения
         # ИСПОЛЬЗУЕМ УНИКАЛЬНЫЕ, ПОЛНЫЕ ИМЕНА
         self.control_modes = {
             "pump_0": "OPC",
@@ -53,15 +65,25 @@ class ControlLogic:
         return {"status": "OK", "message": f"Режим для {component} переключен на {source}."}
 
     def process_command(self, mode: str, source: str, component: str, param: str, value):
-        print(f"\n[CONTROL] Команда: source={source}, component={component}, param={param}\n")
+        print(f"\n[CONTROL] Команда: source={source}, component={component}, param={param}, value={value}")
 
-        # Проверяем, разрешено ли управление
         if self.control_modes.get(component) != source:
             print(f"[CONTROL] БЛОКИРОВАНО! Режим для '{component}': {self.control_modes.get(component)}")
             return {"status": "BLOCKED"}
+
+        # Проверка на дублирующее значение
+        prev = self.state_cache.get((component, param))
+        if prev == value:
+            print(f"[CONTROL] Значение не изменилось ({component}.{param} = {value}), пропуск.")
+            return {"status": "UNCHANGED"}
         
-        
-        print(f"[CONTROL] РАЗРЕШЕНО. Отправка в модель.")
+        # Обновляем кэш состояния
+        self.state_cache[(component, param)] = value
+
+        # Отправляем на OPC, если это НЕ из OPC
+        if source != "OPC":
+            asyncio.create_task(opc_adapter.send_to_opc(component, param, value))
+
         model = simulation_manager["main_bkns"]
         
         try:
@@ -188,19 +210,16 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Digital Twin Control API", lifespan=lifespan)
 
 
-#3. Подключаем роутер с API к основному приложению
+### Подключем к фронтенду 
 app.include_router(api_router)
 
-# 4. Монтируем папку со статическими файлами React
-app.mount("/", StaticFiles(directory="build", html=True), name="static")
+STATIC_FILES_DIR = os.getenv("STATIC_FILES_DIR")
 
-@app.get("/{full_path:path}", include_in_schema=False) # include_in_schema=False, чтобы не мешать Swagger
-async def serve_react_app(full_path: str):
-    index_path = os.path.join(BUILD_DIR, "index.html")
-    # Проверяем, существует ли файл, чтобы избежать ошибок
-    if os.path.exists(index_path):
-        return FileResponse(index_path)
-    return {"error": "index.html not found"} # Или можно вернуть 404
+if STATIC_FILES_DIR is None:
+    STATIC_FILES_DIR = "./backend/build/"
+    
+app.mount("/", StaticFiles(directory=STATIC_FILES_DIR, html=True), name="static")
+
 
 @app.get("/debug/model_status")
 def get_raw_model_status():
