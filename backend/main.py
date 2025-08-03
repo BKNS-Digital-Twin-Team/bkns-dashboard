@@ -1,214 +1,240 @@
-# main.py
-
-#import
+# =============================================================================
+# 1. ИМПОРТЫ И КОНФИГУРАЦИЯ
+# =============================================================================
 import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, APIRouter, BackgroundTasks
-from fastapi.staticfiles import StaticFiles # <--- Импортируем StaticFiles
-from fastapi.responses import FileResponse # <--- Импортируем FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-from pathlib import Path
 import os
 
 from Math.BKNS import BKNS
 from opc_adapter import OPCAdapter
 
-#events
+# Глобальные переменные и конфигурация
+SERVER_URL = os.getenv("OPC_SERVER_URL", "opc.tcp://0.0.0.0:4840")
+if SERVER_URL == "opc.tcp://0.0.0.0:4840":
+    print("OPC_SERVER_URL from Docker compose is None, using default")
+
 simulation_is_running = asyncio.Event()
-
-#server_url
-SERVER_URL = os.getenv("OPC_SERVER_URL")
-if SERVER_URL is None:
-    SERVER_URL = "opc.tcp://localhost:4840"
-
-#simulation manager
 simulation_manager = {"main_bkns": BKNS()}
+previous_model_state = {}
 
-#start initialization
-control_logic = None  # Объявляем переменную
-opc_adapter = None    # Объявляем переменную
 
-class ManualCommand(BaseModel):
-    source: str
-    component: str
+def flatten_status_for_opc(status_dict: dict) -> dict:
+    """
+    Тупой конвертер. Берет словарь от get_status() и делает его плоским для OPC.
+    Не лезет в модель. Гарантирует, что данные те же, что и на фронте.
+    """
+    flat = {}
 
-class SetModeCommand(BaseModel):
-    source: str
-    component: str
+    # Насосы
+    for pump_id, pump_data in status_dict.get('pumps', {}).items():
+        prefix = f"pump_{pump_id}"
+        flat[prefix] = {
+            "na_on": pump_data.get('is_running', False),
+            "na_off": pump_data.get('is_off', True),
+            "motor_current": pump_data.get('current', 0.0),
+            "pressure_in": pump_data.get('pressure_in', 0.0),  # <--- БЕРЕТ ИЗ ТОГО ЖЕ МЕСТА, ЧТО И ФРОНТ
+            "pressure_out": pump_data.get('outlet_pressure', 0.0),
+            "flow_rate": pump_data.get('flow_rate', 0.0),
+            "cover_open": pump_data.get('di_kojuh_status', True),
+            "temp_bearing_1": pump_data.get('temperatures', {}).get('T2', 0.0),
+            "temp_bearing_2": pump_data.get('temperatures', {}).get('T3', 0.0),
+            "temp_motor_1": pump_data.get('temperatures', {}).get('T4', 0.0),
+            "temp_motor_2": pump_data.get('temperatures', {}).get('T5', 0.0),
+            "temp_water": pump_data.get('temperatures', {}).get('T5', 0.0) # Используем T5 как температуру воды
+        }
 
+    # Маслосистемы
+    for oil_id, oil_data in status_dict.get('oil_systems', {}).items():
+        prefix = f"oil_system_{oil_id}"
+        flat[prefix] = {
+            "oil_sys_running": oil_data.get('is_running', False),
+            "oil_sys_pressure_ok": oil_data.get('pressure_ok', False),
+            "oil_pressure": oil_data.get('pressure', 0.0),
+            "temperature": oil_data.get('temperature', 0.0),
+        }
+
+    # Задвижки
+    for valve_key, valve_data in status_dict.get('valves', {}).items():
+        prefix = f"valve_{valve_key}"
+        flat[prefix] = {
+            "valve_open": valve_data.get('is_open', False),
+            "valve_closed": valve_data.get('is_closed', True),
+        }
+
+    return flat
+
+async def update_opc_from_model_state(force_send_all=False):
+    """
+    Универсальная функция, которая синхронизирует состояние модели с OPC-сервером.
+    """
+    global previous_model_state
+    model = simulation_manager["main_bkns"]
+    if force_send_all:
+        print("[SYNC] Запуск принудительной полной синхронизации...")
+    
+    # === НОВЫЙ НАДЕЖНЫЙ СПОСОБ ===
+    # 1. Получаем ОДИН раз данные, как для фронтенда. Это наш "источник правды".
+    raw_status = model.get_status()
+    # 2. Конвертируем их в плоский вид для OPC.
+    current_state = flatten_status_for_opc(raw_status)
+    # ================================
+    
+    for component, params in current_state.items():
+        for param, value in params.items():
+            key = (component, param)
+            if force_send_all or previous_model_state.get(key) != value:
+                control_logic.process_command("MODEL", component, param, value)
+                previous_model_state[key] = value
+    
+    if force_send_all:
+        print("[SYNC] Полная синхронизация завершена.")
+
+# =============================================================================
+# 2. ОСНОВНАЯ БИЗНЕС-ЛОГИКА
+# =============================================================================
 class ControlLogic:
     def __init__(self):
-        self.state_cache = {}  # Сохраняем последние значения
-        # ИСПОЛЬЗУЕМ УНИКАЛЬНЫЕ, ПОЛНЫЕ ИМЕНА
+        self.state_cache = {}
         self.control_modes = {
-            "pump_0": "OPC",
-            "pump_1": "OPC",
-            "valve_in_0": "OPC",
-            "valve_out_0": "OPC",
-            "valve_in_1": "OPC",
-            "valve_out_1": "OPC",
-            "oil_system_0": "OPC",
-            "oil_system_1": "OPC",
+            "pump_0": "MODEL",
+            "pump_1": "MODEL",
+            "valve_in_0": "MODEL",
+            "valve_out_0": "MODEL",
+            "valve_in_1": "MODEL",
+            "valve_out_1": "MODEL",
+            "oil_system_0": "MODEL",
+            "oil_system_1": "MODEL",
         }
-    
+
     def get_control_modes(self):
         return self.control_modes
-        
-    def set_control_source(self, component: str, source: str):
-        if component not in self.control_modes:
-            return {"status": "ERROR", "message": f"Неизвестный компонент: {component}"}
-        if source not in ['MANUAL', 'OPC']:
-            return {"status": "ERROR", "message": f"Неизвестный режим: {mode}"}
-        
+
+    def set_control_source(self, component, source):
+        if source not in ["MODEL", "MANUAL"]:
+            return {"status": "ERROR", "message": "Неверный режим"}
         self.control_modes[component] = source
-        print(f"[CONTROL MODE] Режим для '{component}' изменен на '{source}'")
-        return {"status": "OK", "message": f"Режим для {component} переключен на {source}."}
+        return {"status": "OK"}
 
-    def process_command(self, mode: str, source: str, component: str, param: str, value):
-        print(f"\n[CONTROL] Команда: source={source}, component={component}, param={param}, value={value}")
+    def process_command(self, source, component, param, value):
+        print(f"[CONTROL] source={source}, component={component}, param={param}, value={value}")
 
-        if source != "MODEL" and self.control_modes.get(component) != source:
-            print(f"[CONTROL] БЛОКИРОВАНО! Режим для '{component}': {self.control_modes.get(component)}")
-            return {"status": "BLOCKED"}
+        if self.control_modes.get(component) != source:
+            print(f"[CONTROL] Игнор: режим компонента - {self.control_modes.get(component)}")
+            return {"status": "IGNORED"}
 
-        # Проверка на дублирующее значение
-        prev = self.state_cache.get((component, param))
-        if prev == value:
-            print(f"[CONTROL] Значение не изменилось ({component}.{param} = {value}), пропуск.")
-            return {"status": "UNCHANGED"}
-        
-        # Обновляем кэш состояния
-        self.state_cache[(component, param)] = value
-
-        # Отправляем на OPC, если это НЕ из OPC
-        if source != "OPC":
+        # Просто передаем команду дальше. Адаптер сам разберется, отправлять или нет.
+        if source == "MODEL" and opc_adapter and opc_adapter.is_running:
             asyncio.create_task(opc_adapter.send_to_opc(component, param, value))
 
         model = simulation_manager["main_bkns"]
-        
-        try:
-            comp_type, comp_id_str = component.rsplit('_', 1)
-            comp_id_int = int(comp_id_str)
-        except ValueError:
-            return {"status": "ERROR", "message": f"Неверный формат ID в компоненте '{component}'"}
+        type_, id_ = component.rsplit("_", 1)
+        id_ = int(id_)
 
-        # --- ИСПРАВЛЕННАЯ ЛОГИКА ДИСПЕТЧЕРИЗАЦИИ ---
+        if type_ == "pump":
+            if param == "na_start": model.control_pump(id_, True)
+            elif param == "na_stop": model.control_pump(id_, False)
+        elif type_ == "valve_out":
+            model.control_valve(f"in_{id_}", param == "valve_open")
+            model.control_valve(f"out_{id_}", param == "valve_open")
+        elif type_ == "oil_system":
+            model.control_oil_pump(id_, param == "oil_pump_start")
 
-        if comp_type == "pump":
-            print("Обработка насоса...", param)
-            if param == "na_start":
-                model.control_pump(comp_id_int, True)
-                model.get_status()
-                return {"status": "OK", "message": f"Команда START для насоса {comp_id_int} выполнена"}
-            # ИСПРАВЛЕНО: Теперь на stop передается False
-            elif param == "na_stop":
-                model.control_pump(comp_id_int, False)
-                return {"status": "OK", "message": f"Команда STOP для насоса {comp_id_int} выполнена"}
-                  
-        elif comp_type == "valve_out":
-            print("Обработка задвижки...")
-            # ИСПРАВЛЕНО: ID задвижек формируются на основе ID компонента (valve_0 -> in_0, out_0)
-            valve_in_id = f"in_{comp_id_int}"
-            valve_out_id = f"out_{comp_id_int}"
-            
-            if param == "valve_open":
-                model.control_valve(valve_in_id, True)
-                model.control_valve(valve_out_id, True)
-                return {"status": "OK", "message": f"Команды OPEN для задвижек {valve_in_id} и {valve_out_id} выполнены"}
-            elif param == "valve_close":
-                model.control_valve(valve_in_id, False)
-                model.control_valve(valve_out_id, False)
-                return {"status": "OK", "message": f"Команды CLOSE для задвижек {valve_in_id} и {valve_out_id} выполнены"}
-                
-        elif comp_type == "oil_system":
-            print("Обработка маслосистемы...")
-            if param == "oil_pump_start":
-                model.control_oil_pump(comp_id_int, True)
-                return {"status": "OK", "message": f"Команда START для маслонасоса {comp_id_int} выполнена."}
-            # ИСПРАВЛЕНО: Условие для stop теперь правильное
-            elif param == "oil_pump_stop":
-                model.control_oil_pump(comp_id_int, False)
-                return {"status": "OK", "message": f"Команда STOP для маслонасоса {comp_id_int} выполнена."}
+        return {"status": "OK"}
 
-        # Если ни один if не сработал, значит, параметр не подошел
-        print(f"Неизвестный компонент {comp_type} с параметром {param}")
-        return {"status": "ERROR", "message": f"Неизвестный параметр '{param}' для компонента '{component}'"}
-
-# Инициализируем объекты после определения класса
+# =============================================================================
+# 3. ИНИЦИАЛИЗАЦИЯ ГЛОБАЛЬНЫХ ОБЪЕКТОВ
+# =============================================================================
 control_logic = ControlLogic()
-opc_adapter = OPCAdapter(SERVER_URL, control_logic, simulation_manager)
+opc_adapter = OPCAdapter(SERVER_URL, control_logic, simulation_manager, update_opc_from_model_state)
 
+
+# =============================================================================
+# 4. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ И ФОНОВЫЕ ЗАДАЧИ
+# =============================================================================
+async def update_loop():
+    """Основной цикл обновления модели и отправки изменений в OPC."""
+    print(">>> update_loop стартует <<<", flush=True)
+    while True:
+        await simulation_is_running.wait()
+        simulation_manager["main_bkns"].update_system()
+        await update_opc_from_model_state(force_send_all=False)
+        await asyncio.sleep(1)
+
+
+# =============================================================================
+# 5. ОПРЕДЕЛЕНИЕ API ЭНДПОИНТОВ
+# =============================================================================
 api_router = APIRouter(prefix="/api")
 
-@api_router.get("/test")
-async def test(): return {"message": "API работает"}
+class ManualParamCommand(BaseModel):
+    source: str
+    component: str
+    param: str
+    value: float
+
 @api_router.get("/simulation/status")
-def get_current_state(): return simulation_manager["main_bkns"].get_status()
+def get_state():
+    return simulation_manager["main_bkns"].get_status()
+
 @api_router.get("/simulation/control_modes")
-def get_control_modes(): return control_logic.get_control_modes()
+def get_modes():
+    return control_logic.get_control_modes()
 
-@api_router.post("/simulation/control/set_source")
-def set_control_mode_endpoint(command: SetModeCommand): # Теперь SetModeCommand известен
-    return control_logic.set_control_source(command.component, command.source)
-
-'''
 @api_router.post("/simulation/control/manual")
-def control_from_manual(command: ManualCommand): # И ManualCommand известен
-    return control_logic.process_command(
-        mode="control",
-        source="MANUAL", 
-        component=command.component, 
-        param=command.param,
-        value=command.value
-    )
-'''
+def manual_cmd(cmd: ManualParamCommand):
+    return control_logic.process_command(cmd.source, cmd.component, cmd.param, cmd.value)
 
-# --- НОВЫЙ ЭНДПОИНТ ДЛЯ СИНХРОНИЗАЦИИ ---
-@api_router.post("/simulation/sync", status_code=202)
-async def sync_simulation_endpoint(background_tasks: BackgroundTasks):
-    """
-    Запускает фоновую задачу для синхронизации состояния модели с OPC-сервером.
-    """
+@api_router.post("/simulation/sync")
+async def sync(background_tasks: BackgroundTasks):
     if not opc_adapter or not opc_adapter.is_running:
-        return {"status": "ERROR", "message": "OPC-адаптер не подключен."}
-    
-    # Запускаем тяжелую операцию в фоне, чтобы не блокировать ответ
-    background_tasks.add_task(opc_adapter.sync_with_opc_state)
-    return {"status": "ACCEPTED", "message": "Синхронизация запущена."}
-    
+        return {"status": "ERROR", "message": "OPC не подключен"}
+    background_tasks.add_task(update_opc_from_model_state, force_send_all=True)
+    return {"status": "ACCEPTED"}
+
+@api_router.get("/simulation/mode")
+def get_simulation_mode():
+    """Возвращает текущий режим симуляции (running/paused)."""
+    return {"status": "running" if simulation_is_running.is_set() else "paused"}
+
+# main.py -> Секция 5
+
 @api_router.post("/simulation/pause")
 def pause_simulation():
-    if not simulation_is_running.is_set(): return {"status": "already_paused"}
-    simulation_is_running.clear(); print("[SYSTEM] Симуляция поставлена на паузу.")
+    if not simulation_is_running.is_set():
+        return {"status": "already_paused"}
+    simulation_is_running.clear()
+    print("[SYSTEM] Симуляция поставлена на паузу.")
     return {"status": "paused"}
+
 @api_router.post("/simulation/resume")
 def resume_simulation():
-    if simulation_is_running.is_set(): return {"status": "already_running"}
-    simulation_is_running.set(); print("[SYSTEM] Симуляция возобновлена.")
+    if simulation_is_running.is_set():
+        return {"status": "already_running"}
+    simulation_is_running.set()
+    print("[SYSTEM] Симуляция возобновлена.")
     return {"status": "resumed"}
-@api_router.get("/simulation/mode")
-def get_simulation_status(): return {"status": "running"} if simulation_is_running.is_set() else {"status": "paused"}
 
 
-
-# --- Остальной код без изменений ---
+# =============================================================================
+# 6. СБОРКА И ЗАПУСК ПРИЛОЖЕНИЯ FASTAPI
+# =============================================================================
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global update_task, opc_task
-    print("[SYSTEM] Сервер запускается... Старт фоновых задач.")
+    """Управляет фоновыми задачами во время жизни приложения."""
     simulation_is_running.set()
-    update_task = asyncio.create_task(update_loop())
     opc_task = asyncio.create_task(opc_adapter.run())
-    yield 
-    print("[SYSTEM] Сервер отключается... Остановка фоновых задач.")
-    if opc_adapter.is_running: await opc_adapter.disconnect()
-    if opc_task and not opc_task.done(): opc_task.cancel()
-    if update_task and not update_task.done(): update_task.cancel()
-    await asyncio.gather(opc_task, update_task, return_exceptions=True)
-    print("[SYSTEM] Фоновые задачи успешно завершены. Сервер выключен.")
+    model_task = asyncio.create_task(update_loop())
+    yield
+    print("Завершение работы, остановка фоновых задач...")
+    await opc_adapter.disconnect()
+    model_task.cancel()
+    opc_task.cancel()
+    await asyncio.gather(model_task, opc_task, return_exceptions=True)
 
-app = FastAPI(title="Digital Twin Control API", lifespan=lifespan)
-
+app = FastAPI(lifespan=lifespan)
 
 ### Подключем к фронтенду 
 app.include_router(api_router)
@@ -219,49 +245,3 @@ if STATIC_FILES_DIR is None:
     STATIC_FILES_DIR = "./backend/build/"
     
 app.mount("/", StaticFiles(directory=STATIC_FILES_DIR, html=True), name="static")
-
-
-@app.get("/debug/model_status")
-def get_raw_model_status():
-    """
-    ВРЕМЕННЫЙ ЭНДПОИНТ ДЛЯ ОТЛАДКИ.
-    Возвращает полный, необработанный словарь состояния модели BKNS.
-    """
-    print("[DEBUG] Запрошен полный статус модели.")
-    return simulation_manager["main_bkns"].get_status()
-    
-
-previous_model_state = {}
-
-async def update_loop():
-    global previous_model_state
-    while True:
-        try:
-            await simulation_is_running.wait()
-
-            for model_name, model in simulation_manager.items():
-                model.update_system()
-                current_state = model.get_status()
-
-                # === Сравниваем с предыдущим состоянием ===
-                for component, params in current_state.items():
-                    for param, value in params.items():
-                        key = (component, param)
-                        prev_value = previous_model_state.get(key)
-
-                        if prev_value != value:
-                            print(f"[MODEL → OPC] Обнаружено изменение: {component}.{param} → {value}")
-                            control_logic.process_command(
-                                mode="sync",
-                                source="MODEL",
-                                component=component,
-                                param=param,
-                                value=value
-                            )
-                            previous_model_state[key] = value
-
-            await asyncio.sleep(1)
-
-        except asyncio.CancelledError:
-            print("[LOOP] Цикл обновления модели остановлен.")
-            break

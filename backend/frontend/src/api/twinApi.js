@@ -44,3 +44,12 @@ export const setControlMode = (componentName, source) => {
 export const syncWithOpc = () => {
   return apiClient.post('/simulation/sync');
 };
+
+export const sendManualCommand = (component, param, value) => {
+  return apiClient.post('/simulation/control/manual', {
+    source: 'MANUAL',
+    component,
+    param,
+    value
+  });
+};

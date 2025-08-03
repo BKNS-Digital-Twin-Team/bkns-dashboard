@@ -1,7 +1,6 @@
 // src/components/ComponentCard.js
-import React from 'react';
-
-// --- Вспомогательные функции (остаются без изменений) ---
+import React, { useState, useEffect } from 'react';
+import { sendManualCommand } from '../api/twinApi';
 
 const getDisplayName = (name, type) => {
   if (type === 'pumps') return `Насос ${name}`;
@@ -14,7 +13,7 @@ const getDisplayName = (name, type) => {
 };
 
 const PARAM_NAMES = {
-  is_running: 'В работе',
+  is_running: 'В работеее',
   speed: 'Скорость',
   current: 'Ток (А)',
   outlet_pressure: 'Давление на выходе',
@@ -27,61 +26,63 @@ const PARAM_NAMES = {
   temperature: 'Температура',
 };
 
-const formatValue = (key, value) => {
-  if (typeof value === 'boolean') return value ? 'Да' : 'Нет';
-  if (typeof value === 'number') return value.toFixed(2);
-  // Объекты мы теперь будем обрабатывать отдельно, так что эта проверка не нужна
-  // if (typeof value === 'object' && value !== null) return JSON.stringify(value);
-  return String(value);
-};
-
-
-// --- Основной компонент с измененной логикой рендеринга ---
-
 const ComponentCard = ({ name, type, data, mode, onModeToggle }) => {
-  
-  const isManualMode = mode === 'MANUAL';
-  const isButtonDisabled = mode === 'N/A';
-  const buttonText = isManualMode ? 'Вернуть в режим OPC' : 'Переключить в ручной';
-  const cardClasses = `component-card ${isManualMode ? 'manual-mode' : ''}`;
   const displayName = getDisplayName(name, type);
+  const isButtonDisabled = mode === 'N/A';
+  const isManualMode = mode === 'MANUAL';
+  const buttonText = isManualMode ? 'Вернуть в режим OPC' : 'Переключить в ручной';
+
+  const [manualValues, setManualValues] = useState({});
+
+  // Обновляем модельные значения, если нет ручного
+  useEffect(() => {
+    if (!data) return;
+    const updated = { ...manualValues };
+    Object.entries(data).forEach(([key, value]) => {
+      if (typeof value !== 'object' && !(key in manualValues)) {
+        updated[key] = String(value);
+      }
+    });
+    setManualValues(updated);
+  }, [data]);
+
+  const handleChange = (key, value) => {
+    const updated = { ...manualValues, [key]: value };
+    setManualValues(updated);
+
+    if (value.trim() === '') {
+      // очистка — вернуться к OPC (не отправляем ничего)
+      console.log(`[CLEAR] ${name}.${key} → вернется к значению модели`);
+      // можно отправить null или просто ничего не делать
+    } else {
+      const parsed = parseFloat(value);
+      if (!isNaN(parsed)) {
+        sendManualCommand(name, key, parsed);
+      }
+    }
+  };
 
   return (
-    <div className={cardClasses}>
+    <div className="component-card">
       <h3 className="component-title">{displayName}</h3>
-      
-      <div className="component-params">
-        {data && Object.entries(data).map(([key, value]) => {
-          // --- НОВАЯ ЛОГИКА ДЛЯ КРАСИВОГО СПИСКА ---
 
-          // 1. Проверяем, является ли значение вложенным объектом (как temperatures)
-          if (typeof value === 'object' && value !== null) {
+      <div className="component-params">
+        {data &&
+          Object.entries(data).map(([key, value]) => {
+            if (typeof value === 'object' || value === null) return null;
+
             return (
-              // Используем React.Fragment, чтобы не создавать лишний div
-              <React.Fragment key={key}>
-                <div className="param-row param-group-header">
-                  <span>{PARAM_NAMES[key] || key}:</span>
-                </div>
-                <div className="param-nested-list">
-                  {Object.entries(value).map(([nestedKey, nestedValue]) => (
-                    <div key={nestedKey} className="param-row nested">
-                      <span>{nestedKey}:</span>
-                      <strong>{formatValue(nestedKey, nestedValue)}</strong>
-                    </div>
-                  ))}
-                </div>
-              </React.Fragment>
+              <div key={key} className="param-row">
+                <span>{PARAM_NAMES[key] || key}:</span>
+                <input
+                  type="text"
+                  value={manualValues[key] ?? ''}
+                  onChange={(e) => handleChange(key, e.target.value)}
+                  placeholder={String(value)}
+                />
+              </div>
             );
-          }
-          
-          // 2. Если это обычный параметр, рендерим его как и раньше
-          return (
-            <div key={key} className="param-row">
-              <span>{PARAM_NAMES[key] || key}:</span>
-              <strong>{formatValue(key, value)}</strong>
-            </div>
-          );
-        })}
+          })}
       </div>
 
       <div className="component-controls">
