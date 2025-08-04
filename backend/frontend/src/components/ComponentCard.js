@@ -1,6 +1,6 @@
 // src/components/ComponentCard.js
 import React, { useState, useEffect } from 'react';
-import { sendManualCommand } from '../api/twinApi';
+import { sendManualCommand, sendManualOverrides } from '../api/twinApi';
 
 const getDisplayName = (name, type) => {
   if (type === 'pumps') return `Насос ${name}`;
@@ -13,7 +13,7 @@ const getDisplayName = (name, type) => {
 };
 
 const PARAM_NAMES = {
-  is_running: 'В работеее',
+  is_running: 'В работее',
   speed: 'Скорость',
   current: 'Ток (А)',
   outlet_pressure: 'Давление на выходе',
@@ -32,33 +32,43 @@ const ComponentCard = ({ name, type, data, mode, onModeToggle }) => {
   const isManualMode = mode === 'MANUAL';
   const buttonText = isManualMode ? 'Вернуть в режим MODEL' : 'Переключить в ручной';
 
-  const [manualValues, setManualValues] = useState({});
+  const fullComponentName =
+    type === 'pump' ? `pump_${name}`
+    : type === 'valve' ? `valve_${name}`
+    : type === 'oil_system' ? `oil_system_${name}`
+    : name;
 
-  // Обновляем модельные значения, если нет ручного
+  const [manualValues, setManualValues] = useState(() => ({}));
+
   useEffect(() => {
-    if (!data) return;
-    const updated = { ...manualValues };
-    Object.entries(data).forEach(([key, value]) => {
-      if (typeof value !== 'object' && !(key in manualValues)) {
-        updated[key] = String(value);
+    if (Object.keys(manualValues).length > 0) {
+      const filtered = {};
+      for (const [key, value] of Object.entries(manualValues)) {
+        const parsed = parseFloat(value);
+        if (!isNaN(parsed)) {
+          filtered[key] = parsed;
+        }
       }
-    });
-    setManualValues(updated);
-  }, [data]);
+      if (Object.keys(filtered).length > 0) {
+        sendManualOverrides(fullComponentName, filtered)
+          .then(() => console.log(`[OVERRIDE] отправлено: ${fullComponentName}`, filtered))
+          .catch((err) => console.error('Ошибка при отправке overrides:', err));
+      }
+    }
+  }, [manualValues]);
 
-  const handleChange = (key, value) => {
+  const handleOverrideChange = (key, value) => {
     const updated = { ...manualValues, [key]: value };
     setManualValues(updated);
 
     if (value.trim() === '') {
-      // очистка — вернуться к OPC (не отправляем ничего)
-      console.log(`[CLEAR] ${name}.${key} → вернется к значению модели`);
-      // можно отправить null или просто ничего не делать
-    } else {
-      const parsed = parseFloat(value);
-      if (!isNaN(parsed)) {
-        sendManualCommand(name, key, parsed);
-      }
+      console.log(`[OVERRIDE-CLEAR] ${fullComponentName}.${key} → сброс`);
+      return;
+    }
+
+    const parsed = parseFloat(value);
+    if (!isNaN(parsed)) {
+      console.log(`[OVERRIDE] ${fullComponentName}.${key} = ${parsed}`);
     }
   };
 
@@ -72,13 +82,23 @@ const ComponentCard = ({ name, type, data, mode, onModeToggle }) => {
             if (typeof value === 'object' || value === null) return null;
 
             return (
-              <div key={key} className="param-row">
-                <span>{PARAM_NAMES[key] || key}:</span>
+              <div key={key} className="param-block">
+                <div className="param-label">{PARAM_NAMES[key] || key}</div>
+
+                <div className="param-value">
+                  {(() => {
+                    if (typeof value === 'boolean') return value ? 'True' : 'False';
+                    if (typeof value === 'number') return value.toFixed(2);
+                    return String(value);
+                  })()}
+                </div>
+
                 <input
-                  type="text"
+                  className="param-override-input"
+                  type="number"
+                  placeholder="введите значение"
                   value={manualValues[key] ?? ''}
-                  onChange={(e) => handleChange(key, e.target.value)}
-                  placeholder={String(value)}
+                  onChange={(e) => handleOverrideChange(key, e.target.value)}
                 />
               </div>
             );
@@ -94,5 +114,6 @@ const ComponentCard = ({ name, type, data, mode, onModeToggle }) => {
     </div>
   );
 };
+
 
 export default ComponentCard;

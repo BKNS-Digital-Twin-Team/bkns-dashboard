@@ -81,13 +81,19 @@ async def update_opc_from_model_state(force_send_all=False):
     # 2. Конвертируем их в плоский вид для OPC.
     current_state = flatten_status_for_opc(raw_status)
     # ================================
+    for (component, param), value in control_logic.manual_overrides.items():
+        control_logic.process_command("MODEL", component, param, None)
     
     for component, params in current_state.items():
         for param, value in params.items():
             key = (component, param)
-            if force_send_all or previous_model_state.get(key) != value:
+            override_exists = (key in control_logic.manual_overrides)
+
+            if force_send_all or override_exists or previous_model_state.get(key) != value:
                 control_logic.process_command("MODEL", component, param, value)
                 previous_model_state[key] = value
+
+
     
     if force_send_all:
         print("[SYNC] Полная синхронизация завершена.")
@@ -108,7 +114,13 @@ class ControlLogic:
             "oil_system_0": "MODEL",
             "oil_system_1": "MODEL",
         }
+        self.manual_overrides = {}
 
+    def debug_print_overrides(self):
+        print("=== Текущие overrides ===")
+        for key, val in self.manual_overrides.items():
+            print(f"🔧 {key[0]}.{key[1]} = {val}")
+        
     def get_control_modes(self):
         return self.control_modes
 
@@ -117,17 +129,50 @@ class ControlLogic:
             return {"status": "ERROR", "message": "Неверный режим"}
         self.control_modes[component] = source
         return {"status": "OK"}
+    
+    def set_manual_overrides(self, component, overrides_dict):
+        for param, value in overrides_dict.items():
+            try:
+                parsed = float(value)
+                self.manual_overrides[(component, param)] = parsed
+                print(f"[OVERRIDE] сохранено: {component}.{param} = {parsed}")
+            except (ValueError, TypeError):
+                print(f"[OVERRIDE] пропущено: {component}.{param} → {value} (не число)")
 
     def process_command(self, source, component, param, value):
         print(f"[CONTROL] source={source}, component={component}, param={param}, value={value}")
 
+        override_value = self.manual_overrides.get((component, param))
+
+        if override_value is not None:
+            print(f"[OVERRIDE->OPC] заменяем {component}.{param} = {value} на {override_value}")
+            value = override_value
+
+        # 🔥 override применяется — отправляем в OPC без проверки режима
+        if opc_adapter and opc_adapter.is_running:
+            print(f"[SEND->OPC] {component}.{param} = {value} [OVERRIDE]")
+            asyncio.create_task(opc_adapter.send_to_opc(component, param, value))
+        else:
+            print(f"[SKIP OPC] OPC не подключен или не работает: {component}.{param}")
+        return {"status": "OVERRIDDEN"}
+        
+         
         if self.control_modes.get(component) != source:
             print(f"[CONTROL] Игнор: режим компонента - {self.control_modes.get(component)}")
             return {"status": "IGNORED"}
 
-        # Просто передаем команду дальше. Адаптер сам разберется, отправлять или нет.
-        if source == "MODEL" and opc_adapter and opc_adapter.is_running:
+        # Всегда отправляем в OPC, если он работает
+        if opc_adapter and opc_adapter.is_running:
+            print(f"[SEND->OPC] {component}.{param} = {value}")
             asyncio.create_task(opc_adapter.send_to_opc(component, param, value))
+        else:
+            print(f"[SKIP OPC] OPC не подключен или не работает: {component}.{param}")
+            
+            
+        if source == "MANUAL":
+            # ничего не делаем, overrides теперь идут через отдельный API
+            pass
+
 
         model = simulation_manager["main_bkns"]
         type_, id_ = component.rsplit("_", 1)
@@ -224,6 +269,30 @@ class ControlSourceCommand(BaseModel):
 @api_router.post("/simulation/control/set_source")
 def set_control_source(cmd: ControlSourceCommand):
     return control_logic.set_control_source(cmd.component, cmd.source)
+
+@api_router.post("/simulation/control/overrides")
+def set_manual_overrides(payload: dict):
+    print("[POST /control/overrides] payload:", payload)
+    component = payload.get("component")
+    overrides = payload.get("overrides", {})
+
+    if not component or not isinstance(overrides, dict):
+        return {"status": "ERROR", "message": "Неверный формат запроса"}
+
+    control_logic.set_manual_overrides(component, overrides)
+    print("[POST /control/overrides] сохранено:", control_logic.manual_overrides)
+    return {"status": "OK"}
+
+        
+@api_router.get("/simulation/debug/overrides")
+def debug_overrides():
+    return {
+        "overrides": {
+            f"{k[0]}.{k[1]}": v for k, v in control_logic.manual_overrides.items()
+        }
+    }
+
+        
 
 
 # =============================================================================

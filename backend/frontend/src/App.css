@@ -139,3 +139,32 @@ button:disabled {
   font-weight: bold;
   color: #ffffff;
 }
+
+.param-block {
+  display: flex;
+  flex-direction: column; /* ключевой момент */
+  margin-bottom: 1rem;
+  background: #f9f9f9;
+  padding: 0.5rem;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  width: 100%; /* по желанию */
+}
+
+.param-label {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.param-value {
+  font-size: 1.1rem;
+  margin-bottom: 0.25rem;
+  color: #222;
+}
+
+.param-override-input {
+  padding: 0.4rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+}

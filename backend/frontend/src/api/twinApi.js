@@ -53,3 +53,14 @@ export const sendManualCommand = (component, param, value) => {
     value
   });
 };
+
+export const sendManualOverrides = (component, overrides) => {
+  return fetch('/api/simulation/control/overrides', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      component: component,
+      overrides: overrides
+    })
+  });
+};
