@@ -30,7 +30,7 @@ const ComponentCard = ({ name, type, data, mode, onModeToggle }) => {
   const displayName = getDisplayName(name, type);
   const isButtonDisabled = mode === 'N/A';
   const isManualMode = mode === 'MANUAL';
-  const buttonText = isManualMode ? 'Вернуть в режим OPC' : 'Переключить в ручной';
+  const buttonText = isManualMode ? 'Вернуть в режим MODEL' : 'Переключить в ручной';
 
   const [manualValues, setManualValues] = useState({});
 

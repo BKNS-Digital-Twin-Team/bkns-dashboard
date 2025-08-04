@@ -40,7 +40,7 @@ function App() {
   }, [fetchData]);
 
   const handleModeToggle = useCallback(async (fullComponentName, currentMode) => {
-    const targetMode = currentMode === 'MANUAL' ? 'OPC' : 'MANUAL';
+    const targetMode = currentMode === 'MANUAL' ? 'MODEL' : 'MANUAL';
     try {
       await api.setControlMode(fullComponentName, targetMode);
       fetchData();
@@ -95,7 +95,7 @@ function App() {
           data={data}
           mode={currentMode}
           type={type}
-          onModeToggle={() => handleModeToggle(fullComponentName, currentMode)}
+          onModeToggle={() => handleModeToggle(fullComponentName, controlModes[fullComponentName])}
 		  onSync={handleSync}
         />
       );

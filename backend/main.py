@@ -217,6 +217,14 @@ def resume_simulation():
     print("[SYSTEM] Симуляция возобновлена.")
     return {"status": "resumed"}
 
+class ControlSourceCommand(BaseModel):
+    source: str
+    component: str
+
+@api_router.post("/simulation/control/set_source")
+def set_control_source(cmd: ControlSourceCommand):
+    return control_logic.set_control_source(cmd.component, cmd.source)
+
 
 # =============================================================================
 # 6. СБОРКА И ЗАПУСК ПРИЛОЖЕНИЯ FASTAPI
