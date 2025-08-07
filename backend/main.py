@@ -7,18 +7,20 @@ from fastapi import FastAPI, APIRouter, BackgroundTasks
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import os
+from fastapi.middleware.cors import CORSMiddleware
 
-from .Math.BKNS import BKNS
-from .opc_adapter import OPCAdapter
+from Math.BKNS import BKNS
+from opc_adapter import OPCAdapter
 
 # Глобальные переменные и конфигурация
 SERVER_URL = os.getenv("OPC_SERVER_URL", "opc.tcp://localhost:4840/freeopcua/server/")
 if SERVER_URL == "opc.tcp://localhost:4840/freeopcua/server/":
     print("OPC_SERVER_URL from Docker compose is None, using default")
 
-simulation_is_running = asyncio.Event()
+simulation_state = {"running": True}
 simulation_manager = {"main_bkns": BKNS()}
 previous_model_state = {}
+
 
 
 def flatten_status_for_opc(status_dict: dict) -> dict:
@@ -203,9 +205,9 @@ async def update_loop():
     """Основной цикл обновления модели и отправки изменений в OPC."""
     print(">>> update_loop стартует <<<", flush=True)
     while True:
-        await simulation_is_running.wait()
-        simulation_manager["main_bkns"].update_system()
-        await update_opc_from_model_state(force_send_all=False)
+        if simulation_state["running"]:
+            simulation_manager["main_bkns"].update_system()
+            await update_opc_from_model_state(force_send_all=False)
         await asyncio.sleep(1)
 
 
@@ -242,23 +244,23 @@ async def sync(background_tasks: BackgroundTasks):
 @api_router.get("/simulation/mode")
 def get_simulation_mode():
     """Возвращает текущий режим симуляции (running/paused)."""
-    return {"status": "running" if simulation_is_running.is_set() else "paused"}
+    return {"status": "running" if simulation_state["running"] else "paused"}
 
 # main.py -> Секция 5
 
 @api_router.post("/simulation/pause")
 def pause_simulation():
-    if not simulation_is_running.is_set():
+    if not simulation_state["running"]:
         return {"status": "already_paused"}
-    simulation_is_running.clear()
+    simulation_state["running"] = False
     print("[SYSTEM] Симуляция поставлена на паузу.")
     return {"status": "paused"}
 
 @api_router.post("/simulation/resume")
 def resume_simulation():
-    if simulation_is_running.is_set():
+    if simulation_state["running"]:
         return {"status": "already_running"}
-    simulation_is_running.set()
+    simulation_state["running"] = True
     print("[SYSTEM] Симуляция возобновлена.")
     return {"status": "resumed"}
 
@@ -301,7 +303,6 @@ def debug_overrides():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Управляет фоновыми задачами во время жизни приложения."""
-    simulation_is_running.set()
     opc_task = asyncio.create_task(opc_adapter.run())
     model_task = asyncio.create_task(update_loop())
     yield
@@ -313,12 +314,20 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-### Подключем к фронтенду 
+# Разрешаем CORS в dev-режиме
+if os.getenv("DEV_MODE") == "true":
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["http://localhost:3000"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+else:
+    # Только в проде монтируем статику
+    STATIC_FILES_DIR = os.getenv("STATIC_FILES_DIR")
+    if STATIC_FILES_DIR is None:
+        STATIC_FILES_DIR = "./backend/build/"
+    app.mount("/", StaticFiles(directory=STATIC_FILES_DIR, html=True), name="static")
+
 app.include_router(api_router)
-
-STATIC_FILES_DIR = os.getenv("STATIC_FILES_DIR")
-
-if STATIC_FILES_DIR is None:
-    STATIC_FILES_DIR = "./backend/build/"
-    
-app.mount("/", StaticFiles(directory=STATIC_FILES_DIR, html=True), name="static")

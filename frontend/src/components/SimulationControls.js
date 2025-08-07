@@ -1,8 +1,8 @@
 // src/components/SimulationControls.js
 import React from 'react';
 
-const SimulationControls = ({ mode, onPause, onResume, onSync }) => {
-  const isRunning = mode === 'running';
+const SimulationControls = ({ simulationMode, onPause, onResume, onSync }) => {
+  const isRunning = simulationMode === 'running';
 
   return (
     <div className="simulation-controls">

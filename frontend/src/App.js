@@ -57,11 +57,29 @@ function App() {
       <h1 className="text-2xl font-bold mb-4">Панель управления цифровым двойником БКНС</h1>
 
       <SimulationControls
-        fetchData={fetchData}
-        controlModes={controlModes}
-        simulationMode={simulationMode}
-        setSimulationMode={setSimulationMode}
-      />
+      fetchData={fetchData}
+      controlModes={controlModes}
+      simulationMode={simulationMode}
+      setSimulationMode={setSimulationMode}
+      onPause={async () => {
+        await api.pauseSimulation();
+        fetchData();
+      }}
+      onResume={async () => {
+        console.log("onResume вызван");
+        try {
+          const response = await api.resumeSimulation();
+          console.log("Ответ от /resume:", response.data);
+
+          // Подождать чуть-чуть, чтобы сервер успел обновить состояние
+          await new Promise((resolve) => setTimeout(resolve, 300));
+
+          await fetchData();
+        } catch (err) {
+          console.error("Ошибка при возобновлении:", err);
+        }
+      }}
+    />
 
       {error && <div className="text-red-500">{error}</div>}
 
