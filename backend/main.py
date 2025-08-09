@@ -1,6 +1,4 @@
-# =============================================================================
 # 1. ИМПОРТЫ И КОНФИГУРАЦИЯ
-# =============================================================================
 import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, APIRouter, BackgroundTasks
@@ -12,8 +10,6 @@ import uuid
 import importlib.util
 import time
 
-
-# Импортируем роутер из другого файла
 from state import (
     sessions, session_states, previous_states, session_last_full_sync,
     opc_adapters, SERVER_URL, FULL_SYNC_INTERVAL
@@ -24,17 +20,12 @@ from api.simulation import api_router as simulation_router
 from opc_utils import update_opc_from_model_state
 from Math.BKNS import BKNS
 
-
-# =============================================================================
-# 3. ИНИЦИАЛИЗАЦИЯ ГЛОБАЛЬНЫХ ОБЪЕКТОВ
-# =============================================================================
+# 2 ИНИЦИАЛИЗАЦИЯ ГЛОБАЛЬНЫХ ОБЪЕКТОВ
 control_logic = ControlLogic()
 opc_adapter = OPCAdapter(SERVER_URL, control_logic, sessions, update_opc_from_model_state)
 
 
-# =============================================================================
-# 4. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ И ФОНОВЫЕ ЗАДАЧИ
-# =============================================================================
+# 3 ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ И ФОНОВЫЕ ЗАДАЧИ
 async def update_loop(session_id):
     print(f">>> update_loop стартует для {session_id} <<<", flush=True)
     while True:
@@ -43,16 +34,11 @@ async def update_loop(session_id):
             await update_opc_from_model_state(session_id, force_send_all=False)
         await asyncio.sleep(1)
 
-
-# =============================================================================
-# 5. ОПРЕДЕЛЕНИЕ API ЭНДПОИНТОВ
-# =============================================================================
+# 4 ОПРЕДЕЛЕНИЕ API ЭНДПОИНТОВ
 api_router = APIRouter(prefix="/api")
 api_router.include_router(simulation_router)
 
-# =============================================================================
-# 6. СБОРКА И ЗАПУСК ПРИЛОЖЕНИЯ FASTAPI
-# =============================================================================
+# 5 СБОРКА И ЗАПУСК ПРИЛОЖЕНИЯ FASTAPI
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Управляет фоновыми задачами во время жизни приложения."""

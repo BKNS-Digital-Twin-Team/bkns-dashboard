@@ -1,27 +1,19 @@
-# api/simulation.py
-
-# Стандартные импорты FastAPI и Python
 from fastapi import APIRouter, BackgroundTasks, HTTPException
 from pydantic import BaseModel
 import asyncio
 import uuid
 import importlib.util
+import os
 
-# --- НОВЫЕ ИМПОРТЫ ИЗ НАШИХ МОДУЛЕЙ ---
-
-# Импортируем словари с состоянием
 from state import (
     sessions, session_states, previous_states, session_last_full_sync,
     opc_adapters, SERVER_URL
 )
 
-# Импортируем экземпляр бизнес-логики
 from logic import control_logic
 
-# Импортируем утилиты для OPC
 from opc_utils import update_opc_from_model_state
 
-# Импортируем класс OPCAdapter для создания новых экземпляров
 from opc_adapter import OPCAdapter
 
 # Импортируем фоновую задачу для обновления модели
@@ -42,19 +34,20 @@ def get_modes(session_id: str):
 def get_state(session_id: str):
     return sessions[session_id].get_status()
 
+
 @api_router.post("/simulation/{session_id}/pause")
-def pause_simulation():
-    if not session_states[session_id] == "running":
+def pause_simulation(session_id: str):
+    if session_states[session_id]["running"] == False:
         return {"status": "already_paused"}
-    simulation_state["running"] = False
+    session_states["running"] = False
     print("[SYSTEM] Симуляция поставлена на паузу.")
     return {"status": "paused"}
 
 @api_router.post("/simulation/{session_id}/resume")
-def resume_simulation():
-    if simulation_state["running"]:
+def resume_simulation(session_id: str):
+    if session_states[session_id]["running"] == True:
         return {"status": "already_running"}
-    simulation_state["running"] = True
+    session_states["running"] = True
     print("[SYSTEM] Симуляция возобновлена.")
     return {"status": "resumed"}
 
@@ -66,14 +59,15 @@ class ManualParamCommand(BaseModel):
     value: float
 
 @api_router.post("/simulation/{session_id}/control/manual")
-def manual_cmd(cmd: ManualParamCommand):
+def manual_cmd(session_id: str, cmd: ManualParamCommand):
     return control_logic.process_command(cmd.source, cmd.component, cmd.param, cmd.value)
 
 @api_router.post("/simulation/{session_id}/sync")
-async def sync(background_tasks: BackgroundTasks):
-    if not opc_adapter or not opc_adapter.is_running:
+async def sync(session_id: str, background_tasks: BackgroundTasks):
+    adapter = opc_adapters.get(session_id)
+    if not adapter or not adapter.is_running:
         return {"status": "ERROR", "message": "OPC не подключен"}
-    background_tasks.add_task(update_opc_from_model_state, force_send_all=True)
+    background_tasks.add_task(update_opc_from_model_state, session_id, force_send_all=True)
     return {"status": "ACCEPTED"}
 
 
@@ -82,12 +76,13 @@ class ControlSourceCommand(BaseModel):
     source: str
     component: str
 
-@api_router.post("/simulation/control/set_source")
-def set_control_source(cmd: ControlSourceCommand):
-    return control_logic.set_control_source(cmd.component, cmd.source)
-
-@api_router.post("/simulation/control/overrides")
-def set_manual_overrides(payload: dict):
+@api_router.post("/simulation/{session_id}/control/set_source")
+def set_control_source(session_id: str, cmd: ControlSourceCommand):
+    # Добавляем проверку, что сессия существует
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Сессия не найдена")
+        
+    return control_logic.set_control_source(session_id, cmd.component, cmd.source)
     print("[POST /control/overrides] payload:", payload)
     component = payload.get("component")
     overrides = payload.get("overrides", {})
@@ -100,13 +95,32 @@ def set_manual_overrides(payload: dict):
     return {"status": "OK"}
 
         
+@api_router.post("/simulation/{session_id}/control/overrides")
+def set_manual_overrides(session_id: str, payload: dict):
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Сессия не найдена")
+        
+    # Упрощаем и делаем логику более строгой
+    component = payload.get("component")
+    param = payload.get("param")
+    value = payload.get("value")
+
+    if not all([component, param, value is not None]):
+        raise HTTPException(status_code=400, detail="Неверный формат. Требуются 'component', 'param', 'value'.")
+
+    control_logic.set_manual_overrides(session_id, component, param, value)
+    print(f"[OVERRIDE] Для сессии {session_id} установлено: {component}.{param} = {value}")
+    return {"status": "OK"}
+
 @api_router.get("/simulation/debug/overrides")
 def debug_overrides():
-    return {
-        "overrides": {
-            f"{k[0]}.{k[1]}": v for k, v in control_logic.manual_overrides.items()
+    # Форматируем вывод так, чтобы было понятно, где какая сессия
+    all_overrides = {}
+    for session_id, overrides in control_logic.manual_overrides.items():
+        all_overrides[session_id] = {
+            f"{k[0]}.{k[1]}": v for k, v in overrides.items()
         }
-    }
+    return all_overrides
 
 
 class LoadSessionRequest(BaseModel):
@@ -115,28 +129,52 @@ class LoadSessionRequest(BaseModel):
 
 @api_router.post("/simulation/session/load")
 async def load_session(data: LoadSessionRequest):
-    session_id = f"{data.session_name}_{uuid.uuid4().hex[:6]}"
-    
-    opc_adapters[session_id] = OPCAdapter(SERVER_URL, control_logic, sessions, update_opc_from_model_state)
-    asyncio.create_task(opc_adapters[session_id].run())
-    
-    session_id = f"{data.session_name}_{uuid.uuid4().hex[:6]}"
+    # ID сессии теперь - это имя папки, которое передал клиент.
+    session_id = data.session_name
+
+    # КЛЮЧЕВАЯ ПРОВЕРКА: Не пытаемся ли мы загрузить сессию, которая уже активна?
+    if session_id in sessions:
+        # Код 409 Conflict идеально подходит для этой ситуации.
+        raise HTTPException(status_code=409, detail=f"Сессия '{session_id}' уже загружена и активна.")
 
     try:
-        full_path = f"./sessions/{session_id}/{data.config_file}"
+        # Наше соглашение: в каждой папке сессии лежит файл с именем 'config.py'
+        config_filename = "config.py"
+        full_path = f"./sessions/{session_id}/{config_filename}"
 
-        spec = importlib.util.spec_from_file_location("session_config", full_path)
+        # Проверяем, существует ли такой файл, перед тем как его загружать
+        if not os.path.exists(full_path):
+             raise FileNotFoundError(f"Конфигурационный файл не найден: {full_path}")
+
+        # Загружаем модуль из этого конкретного файла
+        spec = importlib.util.spec_from_file_location(session_id, full_path)
         config_module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(config_module)
 
-        # Теперь можно получить данные
-        model = config_module.MODEL  # или как у тебя там объект называется
+        model = config_module.MODEL
+
+        # Инициализируем ВСЕ состояния для этой сессии
         sessions[session_id] = model
-        
+        session_states[session_id] = {"running": True}
+        previous_states[session_id] = {}
+        session_last_full_sync[session_id] = 0
+        control_logic.control_modes[session_id] = {}
+        control_logic.manual_overrides[session_id] = {}
+
+        # Создаем и запускаем OPC-адаптер для этой сессии
+        opc_adapter = OPCAdapter(SERVER_URL, control_logic, sessions)
+        opc_adapters[session_id] = opc_adapter
+        asyncio.create_task(opc_adapter.run(session_id))
+
+        # Запускаем фоновую задачу обновления модели для этой сессии
         asyncio.create_task(update_loop(session_id))
 
-        return {"session_id": session_id, "status": "created"}
+        print(f"[SYSTEM] Сессия '{session_id}' успешно загружена из папки.")
+        return {"session_id": session_id, "status": "loaded"}
 
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"КРИТИЧЕСКАЯ ОШИБКА при загрузке сессии '{session_id}': {e}")
+        raise HTTPException(status_code=500, detail=f"Внутренняя ошибка при загрузке сессии: {e}")
         
