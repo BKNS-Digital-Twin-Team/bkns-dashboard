@@ -1,55 +1,38 @@
-# 1. ИМПОРТЫ И КОНФИГУРАЦИЯ
+
 import asyncio
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, APIRouter, BackgroundTasks
-from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from fastapi import FastAPI
 import os
 from fastapi.middleware.cors import CORSMiddleware
-import uuid
-import importlib.util
-import time
+from fastapi.staticfiles import StaticFiles
 
+# ИЗМЕНЕНИЕ: Убраны лишние импорты, которые больше не используются в этом файле
 from state import (
-    sessions, session_states, previous_states, session_last_full_sync,
-    opc_adapters, SERVER_URL, FULL_SYNC_INTERVAL
+    sessions, session_states, opc_adapters
 )
-from logic import ControlLogic # Импортируем готовый объект, а не класс
-from opc_adapter import OPCAdapter
 from api.simulation import api_router as simulation_router
 from opc_utils import update_opc_from_model_state
-from Math.BKNS import BKNS
-
-# 2 ИНИЦИАЛИЗАЦИЯ ГЛОБАЛЬНЫХ ОБЪЕКТОВ
-control_logic = ControlLogic()
-opc_adapter = OPCAdapter(SERVER_URL, control_logic, sessions, update_opc_from_model_state)
-
 
 # 3 ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ И ФОНОВЫЕ ЗАДАЧИ
 async def update_loop(session_id):
     print(f">>> update_loop стартует для {session_id} <<<", flush=True)
-    while True:
-        if session_states[session_id]["running"]:
+    while session_id in sessions:
+        if session_states.get(session_id, {}).get("running"):
             sessions[session_id].update_system()
             await update_opc_from_model_state(session_id, force_send_all=False)
         await asyncio.sleep(1)
-
+    print(f">>> update_loop для сессии {session_id} завершен <<<")
+    
 # 4 ОПРЕДЕЛЕНИЕ API ЭНДПОИНТОВ
-api_router = APIRouter(prefix="/api")
-api_router.include_router(simulation_router)
 
 # 5 СБОРКА И ЗАПУСК ПРИЛОЖЕНИЯ FASTAPI
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Управляет фоновыми задачами во время жизни приложения."""
-    opc_task = asyncio.create_task(opc_adapter.run())
-    model_task = asyncio.create_task(update_loop())
     yield
-    print("Завершение работы, остановка фоновых задач...")
-    await opc_adapter.disconnect()
-    model_task.cancel()
-    opc_task.cancel()
-    await asyncio.gather(model_task, opc_task, return_exceptions=True)
+    print("Завершение работы, остановка всех активных OPC адаптеров...")
+    tasks = [adapter.disconnect() for adapter in opc_adapters.values()]
+    await asyncio.gather(*tasks, return_exceptions=True)
+    print("Все адаптеры остановлены.")
 
 app = FastAPI(lifespan=lifespan)
 
@@ -69,4 +52,4 @@ else:
         STATIC_FILES_DIR = "./backend/build/"
     app.mount("/", StaticFiles(directory=STATIC_FILES_DIR, html=True), name="static")
 
-app.include_router(api_router)
+app.include_router(simulation_router)

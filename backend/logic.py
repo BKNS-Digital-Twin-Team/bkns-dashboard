@@ -6,24 +6,9 @@ from state import control_modes, manual_overrides, opc_adapters, sessions
 
 class ControlLogic:
     def __init__(self):
-        # self.state_cache = {}
-        # self.control_modes = {
-        #     "pump_0": "MODEL",
-        #     "pump_1": "MODEL",
-        #     "valve_in_0": "MODEL",
-        #     "valve_out_0": "MODEL",
-        #     "valve_in_1": "MODEL",
-        #     "valve_out_1": "MODEL",
-        #     "oil_system_0": "MODEL",
-        #     "oil_system_1": "MODEL",
-        # }
-        # self.manual_overrides = {}
-        self.manual_overrides = {}   # session_id -> {(component, param): value}
-        self.control_modes = {}      # session_id -> {component: mode}
-        
-
-
-        
+        self.manual_overrides = manual_overrides
+        self.control_modes = control_modes
+         
     def set_manual_overrides(self, session_id, component, param, value):
         self.manual_overrides.setdefault(session_id, {})
         self.manual_overrides[session_id][(component, param)] = float(value)
@@ -44,16 +29,6 @@ class ControlLogic:
         self.control_modes.setdefault(session_id, {})
         self.control_modes[session_id][component] = source
         return {"status": "OK"}
-        
-    # def get_control_modes(self):
-    #     return self.control_modes
-
-    # def set_control_source(self, component, source):
-    #     if source not in ["MODEL", "MANUAL"]:
-    #         return {"status": "ERROR", "message": "Неверный режим"}
-    #     self.control_modes[component] = source
-    #     return {"status": "OK"}
-    
 
     def process_command(self, session_id, source, component, param, value):
         self.control_modes.setdefault(session_id, {})
@@ -69,12 +44,7 @@ class ControlLogic:
         if override_value is not None:
             print(f"[OVERRIDE->OPC] заменяем {component}.{param} на {override_value}")
             value = override_value
-
-        # # Проверяем режим управления
-        # if self.control_modes.get(session_id, {}).get(component) != source:
-        #     print(f"[CONTROL] Игнор: режим {self.control_modes.get(session_id, {}).get(component)}")
-        #     return {"status": "IGNORED"}
-        
+            
         # Отправляем в OPC
         asyncio.create_task(adapter.send_to_opc(component, param, value))
         
@@ -93,3 +63,5 @@ class ControlLogic:
                 model.control_oil_pump(id_, param == "oil_pump_start")
 
         return {"status": "OK"}
+
+control_logic = ControlLogic()

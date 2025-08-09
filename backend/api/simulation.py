@@ -24,7 +24,7 @@ api_router = APIRouter(prefix="/api")
 
 @api_router.get("/simulation/{session_id}/state")
 def get_simulation_state(session_id: str):
-    return {"status": "running" if session_states[session_id] == "running" else "paused"}
+    return {"status": "running" if session_states.get(session_id, {}).get("running") else "paused"}
 
 @api_router.get("/simulation/{session_id}/control_modes")
 def get_modes(session_id: str):
@@ -39,7 +39,7 @@ def get_state(session_id: str):
 def pause_simulation(session_id: str):
     if session_states[session_id]["running"] == False:
         return {"status": "already_paused"}
-    session_states["running"] = False
+    session_states[session_id]["running"] = False
     print("[SYSTEM] Симуляция поставлена на паузу.")
     return {"status": "paused"}
 
@@ -47,7 +47,7 @@ def pause_simulation(session_id: str):
 def resume_simulation(session_id: str):
     if session_states[session_id]["running"] == True:
         return {"status": "already_running"}
-    session_states["running"] = True
+    session_states[session_id]["running"] = True
     print("[SYSTEM] Симуляция возобновлена.")
     return {"status": "resumed"}
 
@@ -60,7 +60,7 @@ class ManualParamCommand(BaseModel):
 
 @api_router.post("/simulation/{session_id}/control/manual")
 def manual_cmd(session_id: str, cmd: ManualParamCommand):
-    return control_logic.process_command(cmd.source, cmd.component, cmd.param, cmd.value)
+    return control_logic.process_command(session_id, cmd.source, cmd.component, cmd.param, cmd.value)
 
 @api_router.post("/simulation/{session_id}/sync")
 async def sync(session_id: str, background_tasks: BackgroundTasks):
@@ -78,21 +78,10 @@ class ControlSourceCommand(BaseModel):
 
 @api_router.post("/simulation/{session_id}/control/set_source")
 def set_control_source(session_id: str, cmd: ControlSourceCommand):
-    # Добавляем проверку, что сессия существует
-    if session_id not in sessions:
-        raise HTTPException(status_code=404, detail="Сессия не найдена")
-        
+    if session_id not in sessions: raise HTTPException(status_code=404, detail="Сессия не найдена")
+    # ИСПРАВЛЕНИЕ: Убран мертвый код после return
     return control_logic.set_control_source(session_id, cmd.component, cmd.source)
-    print("[POST /control/overrides] payload:", payload)
-    component = payload.get("component")
-    overrides = payload.get("overrides", {})
 
-    if not component or not isinstance(overrides, dict):
-        return {"status": "ERROR", "message": "Неверный формат запроса"}
-
-    control_logic.set_manual_overrides(component, overrides)
-    print("[POST /control/overrides] сохранено:", control_logic.manual_overrides)
-    return {"status": "OK"}
 
         
 @api_router.post("/simulation/{session_id}/control/overrides")
@@ -125,7 +114,6 @@ def debug_overrides():
 
 class LoadSessionRequest(BaseModel):
     session_name: str
-    config_file: str  # имя файла из sessions/
 
 @api_router.post("/simulation/session/load")
 async def load_session(data: LoadSessionRequest):
