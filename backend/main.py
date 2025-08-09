@@ -20,9 +20,12 @@ SERVER_URL = os.getenv("OPC_SERVER_URL", "opc.tcp://localhost:4840/freeopcua/ser
 if SERVER_URL == "opc.tcp://localhost:4840/freeopcua/server/":
     print("OPC_SERVER_URL from Docker compose is None, using default")
 
-simulation_state = {"running": True}
-sessions = {"main_bkns": BKNS()}
 previous_model_state = {}
+
+sessions = {}
+session_states = {}  # session_id -> {"running": True/False}
+previous_states = {}  # session_id -> dict previous values
+opc_adapters = {}  # session_id -> OPCAdapter
 
 
 
@@ -204,13 +207,12 @@ opc_adapter = OPCAdapter(SERVER_URL, control_logic, simulation_manager, update_o
 # =============================================================================
 # 4. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ И ФОНОВЫЕ ЗАДАЧИ
 # =============================================================================
-async def update_loop():
-    """Основной цикл обновления модели и отправки изменений в OPC."""
-    print(">>> update_loop стартует <<<", flush=True)
+async def update_loop(session_id):
+    print(f">>> update_loop стартует для {session_id} <<<", flush=True)
     while True:
-        if simulation_state["running"]:
-            simulation_manager["main_bkns"].update_system()
-            await update_opc_from_model_state(force_send_all=False)
+        if session_states[session_id]["running"]:
+            sessions[session_id].update_system()
+            await update_opc_from_model_state(session_id, force_send_all=False)
         await asyncio.sleep(1)
 
 
