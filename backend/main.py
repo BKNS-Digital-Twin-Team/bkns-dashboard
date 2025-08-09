@@ -10,6 +10,7 @@ import os
 from fastapi.middleware.cors import CORSMiddleware
 import uuid
 import importlib.util
+import time
 
 
 from Math.BKNS import BKNS
@@ -19,13 +20,19 @@ from opc_adapter import OPCAdapter
 SERVER_URL = os.getenv("OPC_SERVER_URL", "opc.tcp://localhost:4840/freeopcua/server/")
 if SERVER_URL == "opc.tcp://localhost:4840/freeopcua/server/":
     print("OPC_SERVER_URL from Docker compose is None, using default")
-
-previous_model_state = {}
+FULL_SYNC_INTERVAL = 30
 
 sessions = {}
 session_states = {}  # session_id -> {"running": True/False}
 previous_states = {}  # session_id -> dict previous values
+session_last_full_sync = {}
+
+manual_overrides = {}  # session_id -> { (component, param): value }
+control_modes = {} 
+
 opc_adapters = {}  # session_id -> OPCAdapter
+
+
 
 
 
@@ -74,126 +81,126 @@ def flatten_status_for_opc(status_dict: dict) -> dict:
 
     return flat
 
-async def update_opc_from_model_state(force_send_all=False):
-    """
-    Универсальная функция, которая синхронизирует состояние модели с OPC-сервером.
-    """
-    global previous_model_state
-    model = simulation_manager["main_bkns"]
-    if force_send_all:
-        print("[SYNC] Запуск принудительной полной синхронизации...")
-    
-    # === НОВЫЙ НАДЕЖНЫЙ СПОСОБ ===
-    # 1. Получаем ОДИН раз данные, как для фронтенда. Это наш "источник правды".
+async def update_opc_from_model_state(session_id, force_send_all=False):
+    model = sessions[session_id]
     raw_status = model.get_status()
-    # 2. Конвертируем их в плоский вид для OPC.
     current_state = flatten_status_for_opc(raw_status)
-    # ================================
+    
+    now = time.time()
+    
+    if force_send_all:
+        session_last_full_sync[session_id] = now
+        print("[SYNC] Запуск принудительной полной синхронизации...")   
+    elif not force_send_all:
+        last_sync_time = session_last_full_sync.get(session_id, 0)
+        if now - last_sync_time >= FULL_SYNC_INTERVAL:
+            force_send_all = True
+            print(f"[SYNC] Автоматическая полная синхронизация для {session_id}...")
+    
     for (component, param), value in control_logic.manual_overrides.items():
         control_logic.process_command("MODEL", component, param, None)
     
     for component, params in current_state.items():
         for param, value in params.items():
             key = (component, param)
-            override_exists = (key in control_logic.manual_overrides)
-
-            if force_send_all or override_exists or previous_model_state.get(key) != value:
-                control_logic.process_command("MODEL", component, param, value)
-                previous_model_state[key] = value
-
-
-    
+            if force_send_all or previous_states[session_id].get(key) != value:
+                opc_adapters[session_id].process_command("MODEL", component, param, value)
+                previous_states[session_id][key] = value
+                
     if force_send_all:
         print("[SYNC] Полная синхронизация завершена.")
+                
 
 # =============================================================================
 # 2. ОСНОВНАЯ БИЗНЕС-ЛОГИКА
 # =============================================================================
 class ControlLogic:
     def __init__(self):
-        self.state_cache = {}
-        self.control_modes = {
-            "pump_0": "MODEL",
-            "pump_1": "MODEL",
-            "valve_in_0": "MODEL",
-            "valve_out_0": "MODEL",
-            "valve_in_1": "MODEL",
-            "valve_out_1": "MODEL",
-            "oil_system_0": "MODEL",
-            "oil_system_1": "MODEL",
-        }
-        self.manual_overrides = {}
+        # self.state_cache = {}
+        # self.control_modes = {
+        #     "pump_0": "MODEL",
+        #     "pump_1": "MODEL",
+        #     "valve_in_0": "MODEL",
+        #     "valve_out_0": "MODEL",
+        #     "valve_in_1": "MODEL",
+        #     "valve_out_1": "MODEL",
+        #     "oil_system_0": "MODEL",
+        #     "oil_system_1": "MODEL",
+        # }
+        # self.manual_overrides = {}
+        self.manual_overrides = {}   # session_id -> {(component, param): value}
+        self.control_modes = {}      # session_id -> {component: mode}
+        
+
+
+        
+    def set_manual_overrides(self, session_id, component, param, value):
+        self.manual_overrides.setdefault(session_id, {})
+        self.manual_overrides[session_id][(component, param)] = float(value)
+    
+    def clear_manual_override(self, session_id, component, param):
+        if session_id in self.manual_overrides:
+            self.manual_overrides[session_id].pop((component, param), None)    
 
     def debug_print_overrides(self):
-        print("=== Текущие overrides ===")
-        for key, val in self.manual_overrides.items():
-            print(f"🔧 {key[0]}.{key[1]} = {val}")
-        
-    def get_control_modes(self):
-        return self.control_modes
-
-    def set_control_source(self, component, source):
+        for sid, overrides in self.manual_overrides.items():
+            print(f"=== Overrides для сессии {sid} ===")
+            for (component, param), val in overrides.items():
+                print(f"🔧 {component}.{param} = {val}")
+                
+    def set_control_source(self, session_id, component, source):
         if source not in ["MODEL", "MANUAL"]:
             return {"status": "ERROR", "message": "Неверный режим"}
-        self.control_modes[component] = source
+        self.control_modes.setdefault(session_id, {})
+        self.control_modes[session_id][component] = source
         return {"status": "OK"}
+        
+    # def get_control_modes(self):
+    #     return self.control_modes
+
+    # def set_control_source(self, component, source):
+    #     if source not in ["MODEL", "MANUAL"]:
+    #         return {"status": "ERROR", "message": "Неверный режим"}
+    #     self.control_modes[component] = source
+    #     return {"status": "OK"}
     
-    def set_manual_overrides(self, component, overrides_dict):
-        for param, value in overrides_dict.items():
-            try:
-                parsed = float(value)
-                self.manual_overrides[(component, param)] = parsed
-                print(f"[OVERRIDE] сохранено: {component}.{param} = {parsed}")
-            except (ValueError, TypeError):
-                print(f"[OVERRIDE] пропущено: {component}.{param} → {value} (не число)")
 
-    def process_command(self, source, component, param, value):
-        print(f"[CONTROL] source={source}, component={component}, param={param}, value={value}")
-
-        override_value = self.manual_overrides.get((component, param))
-
+    def process_command(self, session_id, source, component, param, value):
+        self.control_modes.setdefault(session_id, {})
+        self.control_modes[session_id].setdefault(component, "MODEL")
+        
+        adapter = opc_adapters.get(session_id)
+        if adapter is None or not adapter.is_running:
+            print(f"[SKIP OPC] Нет активного OPC для сессии {session_id}")
+            return {"status": "NO_OPC"}
+        
+        # Если есть оверрайд — подменяем значение
+        override_value = self.manual_overrides.get(session_id, {}).get((component, param))
         if override_value is not None:
-            print(f"[OVERRIDE->OPC] заменяем {component}.{param} = {value} на {override_value}")
+            print(f"[OVERRIDE->OPC] заменяем {component}.{param} на {override_value}")
             value = override_value
 
-        # 🔥 override применяется — отправляем в OPC без проверки режима
-        if opc_adapter and opc_adapter.is_running:
-            print(f"[SEND->OPC] {component}.{param} = {value} [OVERRIDE]")
-            asyncio.create_task(opc_adapter.send_to_opc(component, param, value))
-        else:
-            print(f"[SKIP OPC] OPC не подключен или не работает: {component}.{param}")
-        return {"status": "OVERRIDDEN"}
+        # # Проверяем режим управления
+        # if self.control_modes.get(session_id, {}).get(component) != source:
+        #     print(f"[CONTROL] Игнор: режим {self.control_modes.get(session_id, {}).get(component)}")
+        #     return {"status": "IGNORED"}
         
-         
-        if self.control_modes.get(component) != source:
-            print(f"[CONTROL] Игнор: режим компонента - {self.control_modes.get(component)}")
-            return {"status": "IGNORED"}
-
-        # Всегда отправляем в OPC, если он работает
-        if opc_adapter and opc_adapter.is_running:
-            print(f"[SEND->OPC] {component}.{param} = {value}")
-            asyncio.create_task(opc_adapter.send_to_opc(component, param, value))
-        else:
-            print(f"[SKIP OPC] OPC не подключен или не работает: {component}.{param}")
-            
-            
-        if source == "MANUAL":
-            # ничего не делаем, overrides теперь идут через отдельный API
-            pass
-
-
-        model = simulation_manager["main_bkns"]
-        type_, id_ = component.rsplit("_", 1)
-        id_ = int(id_)
-
-        if type_ == "pump":
-            if param == "na_start": model.control_pump(id_, True)
-            elif param == "na_stop": model.control_pump(id_, False)
-        elif type_ == "valve_out":
-            model.control_valve(f"in_{id_}", param == "valve_open")
-            model.control_valve(f"out_{id_}", param == "valve_open")
-        elif type_ == "oil_system":
-            model.control_oil_pump(id_, param == "oil_pump_start")
+        # Отправляем в OPC
+        asyncio.create_task(adapter.send_to_opc(component, param, value))
+        
+        # Выполняем действия в модели
+        model = sessions.get(session_id)
+        if model:
+            type_, id_ = component.rsplit("_", 1)
+            id_ = int(id_)
+            if type_ == "pump":
+                if param == "na_start": model.control_pump(id_, True)
+                elif param == "na_stop": model.control_pump(id_, False)
+            elif type_ == "valve_out":
+                model.control_valve(f"in_{id_}", param == "valve_open")
+                model.control_valve(f"out_{id_}", param == "valve_open")
+            elif type_ == "oil_system":
+                model.control_oil_pump(id_, param == "oil_pump_start")
 
         return {"status": "OK"}
 
@@ -201,7 +208,7 @@ class ControlLogic:
 # 3. ИНИЦИАЛИЗАЦИЯ ГЛОБАЛЬНЫХ ОБЪЕКТОВ
 # =============================================================================
 control_logic = ControlLogic()
-opc_adapter = OPCAdapter(SERVER_URL, control_logic, simulation_manager, update_opc_from_model_state)
+opc_adapter = OPCAdapter(SERVER_URL, control_logic, sessions, update_opc_from_model_state)
 
 
 # =============================================================================
@@ -229,7 +236,7 @@ class ManualParamCommand(BaseModel):
 
 @api_router.get("/simulation/status")
 def get_state():
-    return simulation_manager["main_bkns"].get_status()
+    return sessions["main_bkns"].get_status()
 
 @api_router.get("/simulation/control_modes")
 def get_modes():
