@@ -8,6 +8,9 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import os
 from fastapi.middleware.cors import CORSMiddleware
+import uuid
+import importlib.util
+
 
 from Math.BKNS import BKNS
 from opc_adapter import OPCAdapter
@@ -18,7 +21,7 @@ if SERVER_URL == "opc.tcp://localhost:4840/freeopcua/server/":
     print("OPC_SERVER_URL from Docker compose is None, using default")
 
 simulation_state = {"running": True}
-simulation_manager = {"main_bkns": BKNS()}
+sessions = {"main_bkns": BKNS()}
 previous_model_state = {}
 
 
@@ -294,6 +297,33 @@ def debug_overrides():
         }
     }
 
+
+class LoadSessionRequest(BaseModel):
+    session_name: str
+    config_file: str  # имя файла из sessions/
+
+
+@api_router.post("/simulation/session/load")
+async def load_session(data: LoadSessionRequest):
+    session_id = f"{data.session_name}_{uuid.uuid4().hex[:6]}"
+
+    try:
+        full_path = f"./sessions/{session_id}/{data.config_file}"
+
+        spec = importlib.util.spec_from_file_location("session_config", full_path)
+        config_module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(config_module)
+
+        # Теперь можно получить данные
+        model = config_module.MODEL  # или как у тебя там объект называется
+        sessions[session_id] = model
+        
+        asyncio.create_task(update_loop(session_id))
+
+        return {"session_id": session_id, "status": "created"}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
         
 
 
