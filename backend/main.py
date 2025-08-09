@@ -97,8 +97,8 @@ async def update_opc_from_model_state(session_id, force_send_all=False):
             force_send_all = True
             print(f"[SYNC] Автоматическая полная синхронизация для {session_id}...")
     
-    for (component, param), value in control_logic.manual_overrides.items():
-        control_logic.process_command("MODEL", component, param, None)
+    for (component, param), override_value in control_logic.manual_overrides.get(session_id, {}).items():
+        control_logic.process_command(session_id, "MODEL", component, param, override_value)
     
     for component, params in current_state.items():
         for param, value in params.items():
