@@ -4,6 +4,8 @@ if SERVER_URL == "opc.tcp://localhost:4840/freeopcua/server/":
     print("OPC_SERVER_URL from Docker compose is None, using default")
 FULL_SYNC_INTERVAL = 30
 
+SESSIONS_DIR = "./sessions"
+
 sessions = {}
 session_states = {}  # session_id -> {"running": True/False}
 previous_states = {}  # session_id -> dict previous values

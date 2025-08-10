@@ -7,17 +7,11 @@ import os
 
 from state import (
     sessions, session_states, previous_states, session_last_full_sync,
-    opc_adapters, SERVER_URL
+    opc_adapters, SERVER_URL, SESSIONS_DIR
 )
-
 from logic import control_logic
-
 from opc_utils import update_opc_from_model_state
-
 from opc_adapter import OPCAdapter
-
-# Импортируем фоновую задачу для обновления модели
-# (предполагаем, что она в main.py или будет в session_manager.py)
 from main import update_loop
 
 api_router = APIRouter(prefix="/api")
@@ -165,4 +159,28 @@ async def load_session(data: LoadSessionRequest):
     except Exception as e:
         print(f"КРИТИЧЕСКАЯ ОШИБКА при загрузке сессии '{session_id}': {e}")
         raise HTTPException(status_code=500, detail=f"Внутренняя ошибка при загрузке сессии: {e}")
+    
+    
+@api_router.get("/simulation/sessions/available")
+def get_available_sessions():
+    """Сканирует папку с сессиями и возвращает их список со статусами."""
+    available_sessions = []
+    try:
+        # Получаем все элементы в директории сессий
+        session_folders = [f for f in os.listdir(SESSIONS_DIR) if os.path.isdir(os.path.join(SESSIONS_DIR, f))]
+        
+        for session_name in session_folders:
+            # Проверяем, активна ли сессия (загружена ли она в память)
+            is_active = session_name in sessions
+            available_sessions.append({
+                "name": session_name,
+                "status": "active" if is_active else "inactive"
+            })
+            
+        return available_sessions
+        
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail=f"Директория сессий '{SESSIONS_DIR}' не найдена.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Ошибка при сканировании сессий: {e}")
         
