@@ -8,45 +8,59 @@ const api = axios.create({
 
 export default api;
 
+// --- НОВАЯ ФУНКЦИЯ ---
+// Получить список всех доступных сессий
+export const getAvailableSessions = () => {
+  return api.get('/simulation/sessions/available');
+};
+
+// --- НОВАЯ ФУНКЦИЯ ---
+// Загрузить (активировать) сессию на бэкенде
+export const loadSession = (session_name) => {
+  return api.post('/simulation/session/load', { session_name });
+};
+
+
 // Получить полное состояние модели
-export const getSimulationStatus = () => {
-  return api.get('/simulation/status');
+export const getSimulationStatus = (sessionId) => {
+  return api.get(`/simulation/${sessionId}/status`);
 };
 
 // Получить режимы управления
-export const getControlModes = () => {
-  return api.get('/simulation/control_modes');
+export const getControlModes = (sessionId) => {
+  return api.get(`/simulation/${sessionId}/control_modes`);
 };
 
 // Получить режим работы симуляции (running/paused)
-export const getSimulationMode = () => {
-  return api.get('/simulation/mode');
+export const getSimulationMode = (sessionId) => {
+  return api.get(`/simulation/${sessionId}/state`); // ИСПРАВЛЕНО: эндпоинт был /mode, а в коде /state
 };
 
+
 // Поставить симуляцию на паузу
-export const pauseSimulation = () => {
-  return api.post('/simulation/pause');
+export const pauseSimulation = (sessionId) => {
+  return api.post(`/simulation/${sessionId}/pause`);
 };
 
 // Возобновить симуляцию
-export const resumeSimulation = () => {
-  return api.post('/simulation/resume');
+export const resumeSimulation = (sessionId) => {
+  return api.post(`/simulation/${sessionId}/resume`);
 };
 
-export const setControlMode = (componentName, source) => {
-  // Отправляем на новый, специальный эндпоинт для смены режима
-  return api.post('/simulation/control/set_source', {
+
+export const setControlMode = (sessionId, componentName, source) => {
+  return api.post(`/simulation/${sessionId}/control/set_source`, {
 	source: source, 
 	component: componentName,
   });
 };
 
-export const syncWithOpc = () => {
-  return api.post('/simulation/sync');
+export const syncWithOpc = (sessionId) => {
+  return api.post(`/simulation/${sessionId}/sync`);
 };
 
-export const sendManualCommand = (component, param, value) => {
-  return api.post('/simulation/control/manual', {
+export const sendManualCommand = (sessionId, component, param, value) => {
+  return api.post('/simulation/${sessionId}/control/manual', {
     source: 'MANUAL',
     component,
     param,
@@ -54,8 +68,8 @@ export const sendManualCommand = (component, param, value) => {
   });
 };
 
-export const sendManualOverrides = (component, overrides) => {
-  return api.post('/simulation/control/overrides', {
+export const sendManualOverrides = (sessionId, component, overrides) => {
+  return api.post('/simulation/${sessionId}/control/overrides', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
