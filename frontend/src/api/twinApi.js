@@ -60,7 +60,7 @@ export const syncWithOpc = (sessionId) => {
 };
 
 export const sendManualCommand = (sessionId, component, param, value) => {
-  return api.post('/simulation/${sessionId}/control/manual', {
+  return api.post(`/simulation/${sessionId}/control/manual`, {
     source: 'MANUAL',
     component,
     param,
@@ -69,12 +69,10 @@ export const sendManualCommand = (sessionId, component, param, value) => {
 };
 
 export const sendManualOverrides = (sessionId, component, overrides) => {
-  return api.post('/simulation/${sessionId}/control/overrides', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      component: component,
-      overrides: overrides
-    })
+  return api.post(`/simulation/${sessionId}/control/overrides`, {
+    component: component,
+    // Эти два поля ожидает ваш бэкенд
+    param: Object.keys(overrides), 
+    value: Object.values(overrides)
   });
 };
