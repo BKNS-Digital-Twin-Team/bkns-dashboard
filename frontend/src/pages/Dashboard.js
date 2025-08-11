@@ -1,25 +1,26 @@
 // src/App.js
 
 import React, { useState, useEffect, useCallback } from 'react';
-import * as api from './api/twinApi';
-import ComponentCard from './components/ComponentCard';
-import SimulationControls from './components/SimulationControls';
-import SystemStatus from './components/SystemStatus';
-import Dashboard from './pages/Dashboard'; 
-import './App.css';
+import { useParams, Link } from 'react-router-dom'; // Импортируем useParams и Link
+import * as api from '../api/twinApi';
+import ComponentCard from '../components/ComponentCard';
+import SimulationControls from '../components/SimulationControls';
+import SystemStatus from '../components/SystemStatus';
 
-function App() {
+function Dashboard() {
+  const { sessionId } = useParams(); // Получаем ID сессии из URL
   const [modelStatus, setModelStatus] = useState({});
   const [controlModes, setControlModes] = useState({});
   const [simulationMode, setSimulationMode] = useState(null);
   const [error, setError] = useState(null);
 
   const fetchData = useCallback(async () => {
+    if (!sessionId) return;
     try {
       const [statusRes, modesRes, simModeRes] = await Promise.all([
-        api.getSimulationStatus(),
-        api.getControlModes(),
-        api.getSimulationMode(),
+        api.getSimulationStatus(sessionId),
+        api.getControlModes(sessionId),
+        api.getSimulationMode(sessionId),
       ]);
 
       const flatData = statusRes.data;
@@ -42,9 +43,9 @@ function App() {
       setError(null);
     } catch (err) {
       console.error("Ошибка при получении данных с сервера:", err);
-      setError("Не удалось подключиться к серверу симуляции. Убедитесь, что он запущен.");
+      setError(`Не удалось подключиться к сессии '${sessionId}'. Убедитесь, что она запущена.`);
     }
-  }, []);
+  }, [sessionId]);
 
   useEffect(() => {
     fetchData();
@@ -57,18 +58,19 @@ function App() {
       <h1 className="text-2xl font-bold mb-4">Панель управления цифровым двойником БКНС</h1>
 
       <SimulationControls
+      sessionId={sessionId}
       fetchData={fetchData}
       controlModes={controlModes}
       simulationMode={simulationMode}
       setSimulationMode={setSimulationMode}
       onPause={async () => {
-        await api.pauseSimulation();
+        await api.pauseSimulation(sessionId);
         fetchData();
       }}
       onResume={async () => {
         console.log("onResume вызван");
         try {
-          const response = await api.resumeSimulation();
+          const response = await api.resumeSimulation(sessionId);
           console.log("Ответ от /resume:", response.data);
 
           // Подождать чуть-чуть, чтобы сервер успел обновить состояние
@@ -89,7 +91,7 @@ function App() {
         <h2 className="text-xl font-semibold mb-2">Насосы</h2>
         <div className="grid grid-cols-2 gap-4">
           {Object.entries(modelStatus.pumps || {}).map(([key, value]) => (
-            <ComponentCard key={key} name={key} data={value} />
+            <ComponentCard key={key} name={key} data={value} sessionId={sessionId}/>
           ))}
         </div>
       </div>
@@ -98,7 +100,7 @@ function App() {
         <h2 className="text-xl font-semibold mb-2">Клапаны</h2>
         <div className="grid grid-cols-2 gap-4">
           {Object.entries(modelStatus.valves || {}).map(([key, value]) => (
-            <ComponentCard key={key} name={key} data={value} />
+            <ComponentCard key={key} name={key} data={value} sessionId={sessionId}/>
           ))}
         </div>
       </div>
@@ -107,7 +109,7 @@ function App() {
         <h2 className="text-xl font-semibold mb-2">Маслосистемы</h2>
         <div className="grid grid-cols-2 gap-4">
           {Object.entries(modelStatus.oil_systems || {}).map(([key, value]) => (
-            <ComponentCard key={key} name={key} data={value} />
+            <ComponentCard key={key} name={key} data={value} sessionId={sessionId}/>
           ))}
         </div>
       </div>
@@ -115,4 +117,4 @@ function App() {
   );
 }
 
-export default App;
+export default Dashboard;
