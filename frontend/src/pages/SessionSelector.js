@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as api from '../api/twinApi';
-import './SessionSelector.css'; // Создадим этот файл для стилей
 
 const SessionSelector = () => {
   const [sessions, setSessions] = useState([]);
