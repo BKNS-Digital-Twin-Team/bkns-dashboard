@@ -12,7 +12,7 @@ from state import (
 from logic import control_logic
 from opc_utils import update_opc_from_model_state
 from opc_adapter import OPCAdapter
-from main import update_loop
+from background_tasks import update_loop
 
 api_router = APIRouter(prefix="/api")
 
