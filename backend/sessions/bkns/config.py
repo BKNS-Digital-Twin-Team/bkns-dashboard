@@ -1,14 +1,14 @@
 import time
 from typing import Dict
-from .OilSystem import OilSystem
-from .Pump import CentrifugalPump
-from .Pipe import PipeModel
-from .Valve import Valve
-from .sensors.valve_sensors import ValveTemperatureSensor, ValvePressureSensor,ValvePositionSensor
-from .sensors.pump_sensors import PumpFlowSensor,PumpMotorCurrentSensor,PumpPressureSensor,PumpShaftSpeedSensor,PumpTemperatureSensor
-from .sensors.pipe_sensors import PipePressureSensor,PipeTemperatureSensor
-from .sensors.oil_sensors import  OilFlowSensor, OilTemperatureSensor
-from .sensors.tank_sensors import TankLevelSensor, TankDensitySensor, TankTemperatureSensor, TankFlowRateSensor
+from Math.OilSystem import OilSystem
+from Math.Pump import CentrifugalPump
+from Math.Pipe import PipeModel
+from Math.Valve import Valve
+from Math.sensors.valve_sensors import ValveTemperatureSensor, ValvePressureSensor,ValvePositionSensor
+from Math.sensors.pump_sensors import PumpFlowSensor,PumpMotorCurrentSensor,PumpPressureSensor,PumpShaftSpeedSensor,PumpTemperatureSensor
+from Math.sensors.pipe_sensors import PipePressureSensor,PipeTemperatureSensor
+from Math.sensors.oil_sensors import  OilFlowSensor, OilTemperatureSensor
+from Math.sensors.tank_sensors import TankLevelSensor, TankDensitySensor, TankTemperatureSensor, TankFlowRateSensor
 
 
 class BKNS:
@@ -572,78 +572,5 @@ import sys
 
 #log_file = open("Пример.log", "w", encoding="utf-8")
 #sys.stdout = log_file
-if __name__ == "__main__":
 
-    # Инициализация системы БКНС с параметрами по умолчанию:
-    bkns = BKNS()
-    
-    # Открываем все задвижки насосов NA4 и NA2
-    bkns.control_valve('in_0', True)
-    bkns.control_valve('out_0', True)
-    bkns.control_valve('in_1', True)
-    bkns.control_valve('out_1', True)
-
-    # Запускаем маслонасосы для обоих насосов
-    bkns.control_oil_pump(0, True)
-    bkns.control_oil_pump(1, True)
-
-    print("=== Начало симуляции БКНС ===")
-    try:
-        for i in range(45):  # Увеличиваем длительность для демонстрации новых сценариев
-            bkns.update_system()
-            print(f"\n=== Состояние БКНС через {i} секунд ===")
-            print(bkns)
-
-            # --- Режимы работы одного насоса (NA4) ---
-            if i == 5:
-                print("\n>>> Запускаем насос NA4")
-                bkns.control_pump(0, True)
-            if i == 10:
-                print("\n>>> Закрываем выходную задвижку NA4")
-                bkns.control_valve('out_0', False)
-            if i == 14:
-                print("\n>>> Повторная попытка закрыть выходную задвижку NA4")
-                bkns.control_valve('out_0', False)
-            if i == 16:
-                print("\n>>> Открываем выходную задвижку NA4")
-                bkns.control_valve('out_0', True)
-            if i == 18:
-                print("\n>>> Останавливаем насос NA4")
-                bkns.control_pump(0, False)
-            if i == 20:
-                print("\n>>> Останавливаем маслонасос NA4")
-                bkns.control_oil_pump(0, False)
-
-            # --- Работа двух насосов одновременно ---
-            if i == 22:
-                print("\n>>> Запускаем насос NA4 и насос NA2 одновременно")
-                bkns.control_pump(0, True)
-                bkns.control_pump(1, True)
-                bkns.control_oil_pump(0, True)
-                bkns.control_oil_pump(1, True)
-            if i == 25:
-                print("\n>>> Закрываем входную задвижку NA2 (симуляция 'закрыта входная')")
-                bkns.control_valve('in_1', False)
-            if i == 28:
-                print("\n>>> Открываем входную задвижку NA2")
-                bkns.control_valve('in_1', True)
-
-            # --- Работа насоса без масла (маслосистема выключена) ---
-            if i == 30:
-                print("\n>>> Останавливаем маслонасос NA2 (симуляция работы насоса без масла)")
-                bkns.control_oil_pump(1, False)
-            if i == 32:
-                print("\n>>> Останавливаем насос NA2")
-                bkns.control_pump(1, False)
-            if i == 35:
-                print("\n>>> Запускаем насос NA2 без маслонасоса (опасный режим!)")
-                bkns.control_pump(1, True)
-            if i == 40:
-                print("\n>>> Запускаем маслонасос NA2")
-                bkns.control_oil_pump(1, True)
-
-            time.sleep(1)
-
-    except KeyboardInterrupt:
-        print("\nСимуляция остановлена пользователем")
-#log_file.close()
+MODEL = BKNS()

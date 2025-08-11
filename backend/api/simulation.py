@@ -144,7 +144,7 @@ async def load_session(data: LoadSessionRequest):
         control_logic.manual_overrides[session_id] = {}
 
         # Создаем и запускаем OPC-адаптер для этой сессии
-        opc_adapter = OPCAdapter(SERVER_URL, control_logic, sessions)
+        opc_adapter = OPCAdapter(SERVER_URL, control_logic, sessions, update_opc_from_model_state)
         opc_adapters[session_id] = opc_adapter
         asyncio.create_task(opc_adapter.run(session_id))
 
