@@ -17,13 +17,16 @@ class OPCAdapter:
     # -------------------------------------------------------------------------
     # 2.1. Конструктор и конфигурация
     # -------------------------------------------------------------------------
-    def __init__(self, server_url, control_logic, simulation_manager, sync_function):
+    def __init__(self, server_url, control_logic, sessions, sync_function, session_id: str):
         self.client = Client(url=server_url)
         self.control_logic = control_logic
-        self.simulation_manager = simulation_manager
+        self.simulation_manager = sessions
         self.is_running = False
         self.last_sent_values = {}
         self.sync_function = sync_function
+        
+        self.sessions = sessions
+        self.session_id = session_id 
 
         # Карта соответствия параметров модели тегам OPC UA сервера.
         # ЗАМЕНИТЕ "REPLACE_ME" НА РЕАЛЬНЫЕ NodeId ВАШЕГО СЕРВЕРА.
@@ -101,14 +104,16 @@ class OPCAdapter:
                 await self.connect()
                 await self.setup_subscriptions()
                 
-                # !!! ВОТ РЕШЕНИЕ: ЗАПУСКАЕМ ПОЛНУЮ СИНХРОНИЗАЦИЮ СРАЗУ ПОСЛЕ ПОДКЛЮЧЕНИЯ !!!
                 print("[OPC Adapter] Соединение установлено. Запуск полной синхронизации...")
                 await self.sync_function(force_send_all=True)
+                
+                await self.sync_function(self.session_id, force_send_all=True)
                 
                 while self.is_running:
                     await asyncio.sleep(3600)
             except Exception as e:
                 print(f"[OPC Adapter CRITICAL] Ошибка: {e}. Переподключение через 10с.")
+                
                 if self.is_running: await self.disconnect()
                 await asyncio.sleep(10)
 
@@ -132,8 +137,9 @@ class OPCAdapter:
     async def setup_subscriptions(self):
         """Настраивает подписки на изменения control-тегов на сервере."""
         class DataChangeHandler:
-            def __init__(self, adapter_instance):
+            def __init__(self, adapter_instance, session_id): # <--- Принимаем
                 self.adapter = adapter_instance
+                self.session_id = session_id # <--- Сохраняем
 
             def datachange_notification(self, node: Node, val, data: ua.DataChangeNotification):
                 node_id = node.nodeid.to_string()
@@ -146,13 +152,14 @@ class OPCAdapter:
                     # Внимание: у process_command нет аргумента 'mode'.
                     # Предполагаем, что source должен быть 'OPC'.
                     self.adapter.control_logic.process_command(
+                        session_id=self.session_id,
                         source="OPC",
                         component=command_info["component_id"],
                         param=command_info["param"],
                         value=val
                     )
 
-        handler = DataChangeHandler(self)
+        handler = DataChangeHandler(self, self.session_id)
         subscription = await self.client.create_subscription(500, handler)
 
         nodes_to_subscribe = [
