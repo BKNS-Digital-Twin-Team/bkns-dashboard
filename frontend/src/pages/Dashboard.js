@@ -1,115 +1,127 @@
-// src/App.js
-
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom'; // Импортируем useParams и Link
+import { useParams } from 'react-router-dom';
 import * as api from '../api/twinApi';
 import ComponentCard from '../components/ComponentCard';
 import SimulationControls from '../components/SimulationControls';
 import SystemStatus from '../components/SystemStatus';
 
 function Dashboard() {
-  const { sessionId } = useParams(); // Получаем ID сессии из URL
-  const [modelStatus, setModelStatus] = useState({});
+  const { sessionId } = useParams();
+  const [modelStatus, setModelStatus] = useState({ pumps: {}, valves: {}, oil_systems: {} });
   const [controlModes, setControlModes] = useState({});
   const [simulationMode, setSimulationMode] = useState(null);
   const [error, setError] = useState(null);
 
+  // Оборачиваем fetchData в useCallback, чтобы функция не создавалась заново при каждом рендере.
+  // Это важно для стабильной работы useEffect.
   const fetchData = useCallback(async () => {
     if (!sessionId) return;
+
     try {
-      const [statusRes, modesRes, simModeRes] = await Promise.all([
+      // Используем Promise.allSettled для параллельного выполнения всех запросов.
+      // Он не прервется, если один из запросов завершится с ошибкой.
+      const results = await Promise.allSettled([
         api.getSimulationStatus(sessionId),
         api.getControlModes(sessionId),
         api.getSimulationMode(sessionId),
       ]);
 
-      const flatData = statusRes.data;
+      const statusResult = results[0];
+      const modesResult = results[1];
+      const simModeResult = results[2];
 
-      const grouped = {
-        pumps: {},
-        valves: {},
-        oil_systems: {}
-      };
+      // Главная проверка: если запрос статуса модели все еще возвращает 404,
+      // значит сессия еще не готова.
+      if (statusResult.status === 'rejected' && statusResult.reason?.response?.status === 404) {
+        console.log(`Сессия '${sessionId}' еще не готова (404 Not Found). Повторная попытка...`);
+        setError(`Сессия '${sessionId}' загружается...`);
+        return; // Прерываем выполнение до следующей попытки
+      }
 
+      // Если запрос статуса вернул любую другую ошибку, сообщаем о ней.
+      if (statusResult.status === 'rejected') {
+        console.error("Ошибка при получении статуса модели:", statusResult.reason);
+        setError(`Не удалось получить статус сессии '${sessionId}'.`);
+        return;
+      }
+
+      // --- Если мы здесь, значит статус модели успешно получен ---
+      setError(null); // Сбрасываем все предыдущие ошибки и сообщения о загрузке.
+
+      // 1. Обрабатываем статус модели (мы знаем, что он успешен)
+      const flatData = statusResult.value.data.components || {}; // Добавлена проверка на components
+      const grouped = { pumps: {}, valves: {}, oil_systems: {} };
       for (const [key, value] of Object.entries(flatData)) {
         if (key.startsWith("pump_")) grouped.pumps[key] = value;
         else if (key.startsWith("valve_out_")) grouped.valves[key] = value;
         else if (key.startsWith("oil_system_")) grouped.oil_systems[key] = value;
       }
-
       setModelStatus(grouped);
-      setControlModes(modesRes.data);
-      setSimulationMode(simModeRes.data.status);
-      setError(null);
-    } catch (err) {
-      console.error("Ошибка при получении данных с сервера:", err);
-      setError(`Не удалось подключиться к сессии '${sessionId}'. Убедитесь, что она запущена.`);
-    }
-  }, [sessionId]);
 
+      // 2. Обрабатываем режимы управления (если запрос был успешен)
+      if (modesResult.status === 'fulfilled') {
+        setControlModes(modesResult.value.data);
+      }
+
+      // 3. Обрабатываем режим симуляции (если запрос был успешен)
+      if (simModeResult.status === 'fulfilled') {
+        setSimulationMode(simModeResult.value.data.status);
+      }
+
+    } catch (err) {
+      console.error("Произошла критическая ошибка в fetchData:", err);
+      setError("Произошла непредвиденная ошибка. Проверьте консоль.");
+    }
+  }, [sessionId]); // Зависимость только от sessionId
+
+  // Хук для периодического вызова fetchData
   useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 1000);
+    fetchData(); // Вызываем сразу при загрузке
+    const interval = setInterval(fetchData, 2000); // И далее каждые 2 секунды
+
+    // Функция очистки при размонтировании компонента
     return () => clearInterval(interval);
-  }, [fetchData]);
+  }, [fetchData]); // Зависимость от memoized-функции fetchData
 
   return (
-    <div className="App">
-      <h1 className="text-2xl font-bold mb-4">Панель управления цифровым двойником БКНС</h1>
+    <div className="App p-6 bg-gray-100 min-h-screen">
+      <h1 className="text-3xl font-bold mb-6 text-gray-800">Панель управления: Сессия '{sessionId}'</h1>
+      
+      <div className="bg-white p-4 rounded-lg shadow-md mb-6">
+        <SimulationControls
+          sessionId={sessionId}
+          simulationMode={simulationMode}
+          onStateChange={fetchData} // Теперь можно безопасно передавать fetchData
+        />
+      </div>
 
-      <SimulationControls
-      sessionId={sessionId}
-      fetchData={fetchData}
-      controlModes={controlModes}
-      simulationMode={simulationMode}
-      setSimulationMode={setSimulationMode}
-      onPause={async () => {
-        await api.pauseSimulation(sessionId);
-        fetchData();
-      }}
-      onResume={async () => {
-        console.log("onResume вызван");
-        try {
-          const response = await api.resumeSimulation(sessionId);
-          console.log("Ответ от /resume:", response.data);
-
-          // Подождать чуть-чуть, чтобы сервер успел обновить состояние
-          await new Promise((resolve) => setTimeout(resolve, 300));
-
-          await fetchData();
-        } catch (err) {
-          console.error("Ошибка при возобновлении:", err);
-        }
-      }}
-    />
-
-      {error && <div className="text-red-500">{error}</div>}
+      {error && <div className="text-center text-yellow-600 bg-yellow-100 p-3 rounded-md mb-6">{error}</div>}
 
       <SystemStatus status={modelStatus} />
 
       <div className="mt-6">
-        <h2 className="text-xl font-semibold mb-2">Насосы</h2>
-        <div className="grid grid-cols-2 gap-4">
+        <h2 className="text-2xl font-semibold mb-4 text-gray-700">Насосы</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {Object.entries(modelStatus.pumps || {}).map(([key, value]) => (
-            <ComponentCard key={key} name={key} data={value} sessionId={sessionId}/>
+            <ComponentCard key={key} name={key} data={value} sessionId={sessionId} controlModes={controlModes} onUpdate={fetchData} />
           ))}
         </div>
       </div>
 
       <div className="mt-6">
-        <h2 className="text-xl font-semibold mb-2">Клапаны</h2>
-        <div className="grid grid-cols-2 gap-4">
+        <h2 className="text-2xl font-semibold mb-4 text-gray-700">Выходные задвижки</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {Object.entries(modelStatus.valves || {}).map(([key, value]) => (
-            <ComponentCard key={key} name={key} data={value} sessionId={sessionId}/>
+            <ComponentCard key={key} name={key} data={value} sessionId={sessionId} controlModes={controlModes} onUpdate={fetchData} />
           ))}
         </div>
       </div>
 
       <div className="mt-6">
-        <h2 className="text-xl font-semibold mb-2">Маслосистемы</h2>
-        <div className="grid grid-cols-2 gap-4">
+        <h2 className="text-2xl font-semibold mb-4 text-gray-700">Маслосистемы</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {Object.entries(modelStatus.oil_systems || {}).map(([key, value]) => (
-            <ComponentCard key={key} name={key} data={value} sessionId={sessionId}/>
+            <ComponentCard key={key} name={key} data={value} sessionId={sessionId} controlModes={controlModes} onUpdate={fetchData} />
           ))}
         </div>
       </div>

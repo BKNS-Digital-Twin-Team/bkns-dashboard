@@ -178,6 +178,8 @@ class BKNS:
 
         # Таймер для обновления состояния
         self.last_update_time = time.time()
+        self.update_system()
+
 
 
     def  update_system(self):
@@ -523,48 +525,42 @@ class BKNS:
     def __str__(self):
         """
         Возвращает текстовое представление состояния системы.
-
+        ИСПРАВЛЕННАЯ ВЕРСИЯ
         """
         status = self.get_status()
         output = []
         
-        # Общая информация
-        output.append("=== Состояние БКНС ===")
-        output.append(f"Входные параметры: Давление={status['main_inlet']['pressure']:.4f} МПа")
-        output.append(f"Выходные параметры: Давление={status['main_outlet']['pressure']:.4f} МПа\n")
+        output.append("=== Состояние БКНС ===\n")
 
         # Детальная информация по каждому насосу
-        for pump_name, pump_data in status['pumps'].items():
+        for i in range(len(self.pumps)):
+            pump_key = f"pump_{i}"
+            oil_key = f"oil_system_{i}"
+            valve_key = f"valve_out_{i}"
+            
+            # Проверяем, есть ли данные в статусе, прежде чем их использовать
+            pump_data = status.get(pump_key, {})
+            oil_data = status.get(oil_key, {})
+            valve_data = status.get(valve_key, {})
+
             output.append(
-                f"Насос {pump_name} (ID {pump_data['pump_id']}):\n"
-                f"  Режим работы: {pump_data['operation_mode']}\n"
-                f"  Старт: {pump_data['start']}, Стоп: {pump_data['stop']}, "
-                f"Вкл: {pump_data['on']}, Выкл: {pump_data['off']}\n"
-                f"  Ток двигателя: {pump_data['motor_i']:.2f} А\n"
-                f"  Давление вход: {pump_data['pressure_in']:.3f} МПа, "
-                f"выход: {pump_data['pressure_out']:.3f} МПа\n"
-                f"  Температуры:\n"
-                f"    Подшипник (раб.): {pump_data['bearing_work_temp']:.1f}°C\n"
-                f"    Подшипник (поле): {pump_data['bearing_field_temp']:.1f}°C\n"
-                f"    Мотор (раб.): {pump_data['motor_bearing_work_temp']:.1f}°C\n"
-                f"    Мотор (поле): {pump_data['motor_bearing_field_temp']:.1f}°C\n"
-                f"    Гидроподшипник: {pump_data['hydro_support_temp']:.1f}°C\n"
-                f"  Маслосистема: {'запущена' if pump_data['oil_system_running'] else 'остановлена'}, "
-                f"Давление: {pump_data['oil_pressure']:.2f} бар ,"
-                f"Температура масла: {pump_data['oil_temperature']:.1f}°C\n"
-                f"  Команды маслонасоса: старт={pump_data['oil_pump_start_cmd']}, стоп={pump_data['oil_pump_stop_cmd']}\n"
-                f"  Входная задвижка: состояние: "
-                f"{'открыта' if pump_data['in_valve_open'] else 'закрыта' if pump_data['in_valve_closed'] else 'в движении'}, "
-                f"команды: открыть={pump_data['in_valve_open_cmd']}, закрыть={pump_data['in_valve_close_cmd']}\n"
-                f"  Выходная задвижка: состояние: "
-                f"{'открыта' if pump_data['out_valve_open'] else 'закрыта' if pump_data['out_valve_closed'] else 'в движении'}, "
-                f"команды: открыть={pump_data['out_valve_open_cmd']}, закрыть={pump_data['out_valve_close_cmd']}\n"
-                f"  Расход: {pump_data['flow_rate']:.3f} м³/с\n"
+                f"--- Агрегат {i} ---\n"
+                f"  Насос: {'ВКЛ' if pump_data.get('na_on') else 'ВЫКЛ'}\n"
+                f"  Ток двигателя: {pump_data.get('motor_current', 0):.2f} А\n"
+                f"  Давление вход: {pump_data.get('pressure_in', 0):.3f} МПа, "
+                f"выход: {pump_data.get('pressure_out', 0):.3f} МПа\n"
+                f"  Расход: {pump_data.get('flow_rate', 0):.3f} м³/с\n"
+                f"  Температуры (Подшипник/Мотор): {pump_data.get('temp_bearing_1', 0):.1f}°C / {pump_data.get('temp_motor_1', 0):.1f}°C\n"
+                f"  Маслосистема: {'РАБОТАЕТ' if oil_data.get('oil_sys_running') else 'ОСТАНОВЛЕНА'}\n"
+                f"  Давление масла: {oil_data.get('oil_pressure', 0):.2f} бар\n"
+                f"  Выходная задвижка: {'ОТКРЫТА' if valve_data.get('valve_open') else 'ЗАКРЫТА' if valve_data.get('valve_closed') else 'НЕИЗВЕСТНО'}\n"
             )
         
-        output.append("")
-        # Добавляем таблицу с датчиками
-        output.append(self._format_sensors_table(status))
+        # Этот метод для вывода датчиков в __str__ не нужен,
+        # так как get_status не возвращает эту информацию.
+        # Если захотите ее выводить, нужно будет добавить ее в get_status
+        # output.append(self._format_sensors_table(status)) 
+        
         return "\n".join(output)
 
 import time

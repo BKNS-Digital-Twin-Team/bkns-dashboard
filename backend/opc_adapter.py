@@ -105,7 +105,6 @@ class OPCAdapter:
                 await self.setup_subscriptions()
                 
                 print("[OPC Adapter] Соединение установлено. Запуск полной синхронизации...")
-                await self.sync_function(force_send_all=True)
                 
                 await self.sync_function(self.session_id, force_send_all=True)
                 

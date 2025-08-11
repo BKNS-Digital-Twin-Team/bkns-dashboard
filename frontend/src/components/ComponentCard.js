@@ -1,119 +1,115 @@
-// src/components/ComponentCard.js
-import React, { useState, useEffect } from 'react';
-import { sendManualCommand, sendManualOverrides } from '../api/twinApi';
+// Файл: src/components/ComponentCard.js
 
-const getDisplayName = (name, type) => {
-  if (type === 'pumps') return `Насос ${name}`;
-  if (type === 'valves') {
-    const [direction, index] = name.split('_');
-    const dirText = direction === 'in' ? 'Входной' : 'Выходной';
-    return `Клапан ${dirText} ${index}`;
-  }
-  return name;
-};
+import React, { useState } from 'react';
+// --- ИСПРАВЛЕНИЕ ЗДЕСЬ ---
+// Импортируем нашу НОВУЮ функцию в единственном числе
+import { sendManualOverride } from '../api/twinApi'; 
 
+// "Красивые" имена для параметров на русском языке
 const PARAM_NAMES = {
-  is_running: 'В работее',
-  speed: 'Скорость',
-  current: 'Ток (А)',
-  outlet_pressure: 'Давление на выходе',
-  temperatures: 'Температуры',
-  flow_rate: 'Расход',
-  is_open: 'Открыт',
-  is_moving: 'В движении',
-  target_state: 'Целевое состояние',
-  pressure: 'Давление',
-  temperature: 'Температура',
+  // ... (весь ваш объект PARAM_NAMES остается без изменений)
+  na_on: 'Насос включен',
+  na_off: 'Насос выключен',
+  motor_current: 'Ток двигателя (А)',
+  pressure_in: 'Давление на входе (МПа)',
+  pressure_out: 'Давление на выходе (МПа)',
+  flow_rate: 'Расход (м³/с)',
+  temp_bearing_1: 'T подшипника 1 (°C)',
+  temp_bearing_2: 'T подшипника 2 (°C)',
+  temp_motor_1: 'T мотора 1 (°C)',
+  temp_motor_2: 'T мотора 2 (°C)',
+  temp_water: 'T воды (°C)',
+  cover_open: 'Крышка открыта',
+  oil_sys_running: 'Маслосистема в работе',
+  oil_sys_pressure_ok: 'Давление масла в норме',
+  oil_pressure: 'Давление масла (бар)',
+  temperature: 'Температура (°C)',
+  valve_open: 'Задвижка открыта',
+  valve_closed: 'Задвижка закрыта',
 };
 
-const ComponentCard = ({ name, type, data, mode, onModeToggle }) => {
-  const displayName = getDisplayName(name, type);
-  const isButtonDisabled = mode === 'N/A';
-  const isManualMode = mode === 'MANUAL';
-  const buttonText = isManualMode ? 'Вернуть в режим MODEL' : 'Переключить в ручной';
+// Пропсы `type`, `mode`, `onModeToggle` не используются в новой версии,
+// но я оставлю их, если они нужны для другой логики.
+const ComponentCard = ({ name, data, sessionId, onUpdate }) => {
+  // Локальное состояние для хранения значений из полей ввода
+  const [overrides, setOverrides] = useState({});
 
-  const fullComponentName =
-    type === 'pump' ? `pump_${name}`
-    : type === 'valve' ? `valve_${name}`
-    : type === 'oil_system' ? `oil_system_${name}`
-    : name;
-
-  const [manualValues, setManualValues] = useState(() => ({}));
-
-  useEffect(() => {
-    if (Object.keys(manualValues).length > 0) {
-      const filtered = {};
-      for (const [key, value] of Object.entries(manualValues)) {
-        const parsed = parseFloat(value);
-        if (!isNaN(parsed)) {
-          filtered[key] = parsed;
-        }
-      }
-      if (Object.keys(filtered).length > 0) {
-        sendManualOverrides(fullComponentName, filtered)
-          .then(() => console.log(`[OVERRIDE] отправлено: ${fullComponentName}`, filtered))
-          .catch((err) => console.error('Ошибка при отправке overrides:', err));
-      }
-    }
-  }, [manualValues]);
-
-  const handleOverrideChange = (key, value) => {
-    const updated = { ...manualValues, [key]: value };
-    setManualValues(updated);
-
-    if (value.trim() === '') {
-      console.log(`[OVERRIDE-CLEAR] ${fullComponentName}.${key} → сброс`);
-      return;
-    }
-
-    const parsed = parseFloat(value);
-    if (!isNaN(parsed)) {
-      console.log(`[OVERRIDE] ${fullComponentName}.${key} = ${parsed}`);
-    }
+  // Обработчик для обновления локального состояния при вводе
+  const handleOverrideChange = (param, value) => {
+    setOverrides(prev => ({
+      ...prev,
+      [param]: value,
+    }));
   };
 
-  return (
-    <div className="component-card">
-      <h3 className="component-title">{displayName}</h3>
+  // Функция для отправки данных на сервер по нажатию кнопки
+  const applyOverrides = async () => {
+    console.log(`Применение оверрайдов для ${name}:`, overrides);
 
-      <div className="component-params">
-        {data &&
-          Object.entries(data).map(([key, value]) => {
-            if (typeof value === 'object' || value === null) return null;
+    for (const [param, value] of Object.entries(overrides)) {
+      const parsedValue = parseFloat(value);
+      if (!isNaN(parsedValue)) {
+        try {
+          // Вызываем ИСПРАВЛЕННУЮ функцию с правильными аргументами
+          await api.sendManualOverride(sessionId, name, param, parsedValue);
+          console.log(`[OVERRIDE] Успешно: ${name}.${param} = ${parsedValue}`);
+        } catch (error) {
+          console.error(`Ошибка отправки оверрайда для ${name}.${param}:`, error);
+        }
+      }
+    }
+    // Просим родителя обновить все данные, чтобы увидеть результат
+    if (onUpdate) {
+      onUpdate();
+    }
+    // Очищаем локальные оверрайды после применения
+    setOverrides({});
+  };
+  
+  return (
+    <div className="bg-white p-4 rounded-lg shadow-md flex flex-col justify-between">
+      <div>
+        <h3 className="font-bold text-lg mb-2 text-gray-800 capitalize">{name.replace(/_/g, ' ')}</h3>
+        
+        <div className="space-y-2">
+          {data && Object.entries(data).map(([key, value]) => {
+            if (typeof value !== 'number' && typeof value !== 'boolean') return null;
+
+            const isOverridable = typeof value === 'number';
 
             return (
-              <div key={key} className="param-block">
-                <div className="param-label">{PARAM_NAMES[key] || key}</div>
-
-                <div className="param-value">
-                  {(() => {
-                    if (typeof value === 'boolean') return value ? 'True' : 'False';
-                    if (typeof value === 'number') return value.toFixed(2);
-                    return String(value);
-                  })()}
+              <div key={key} className="flex items-center justify-between text-sm">
+                <span className="text-gray-600">{PARAM_NAMES[key] || key}:</span>
+                <div className="flex items-center">
+                  <span className={`font-semibold mr-2 ${typeof value === 'boolean' ? (value ? 'text-green-600' : 'text-red-600') : 'text-gray-900'}`}>
+                    {typeof value === 'boolean' ? (value ? 'Да' : 'Нет') : value.toFixed(3)}
+                  </span>
+                  {isOverridable && (
+                    <input
+                      type="number"
+                      placeholder="Override"
+                      className="border rounded px-2 py-1 w-32 text-right"
+                      value={overrides[key] || ''}
+                      onChange={(e) => handleOverrideChange(key, e.target.value)}
+                    />
+                  )}
                 </div>
-
-                <input
-                  className="param-override-input"
-                  type="number"
-                  placeholder="введите значение"
-                  value={manualValues[key] ?? ''}
-                  onChange={(e) => handleOverrideChange(key, e.target.value)}
-                />
               </div>
             );
           })}
+        </div>
       </div>
-
-      <div className="component-controls">
-        <p>Режим: <strong>{mode}</strong></p>
-        <button onClick={onModeToggle} disabled={isButtonDisabled}>
-          {buttonText}
+      
+      <div className="mt-4 pt-4 border-t">
+        <button
+          onClick={applyOverrides}
+          className="w-full bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
+        >
+          Применить ручные значения
         </button>
       </div>
     </div>
   );
 };
-
 
 export default ComponentCard;

@@ -18,14 +18,19 @@ api_router = APIRouter(prefix="/api")
 
 @api_router.get("/simulation/{session_id}/state")
 def get_simulation_state(session_id: str):
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail=f"Сессия '{session_id}' не найдена или еще не загружена.")
+    
     return {"status": "running" if session_states.get(session_id, {}).get("running") else "paused"}
 
 @api_router.get("/simulation/{session_id}/control_modes")
 def get_modes(session_id: str):
-    return sessions[session_id].get_control_modes()
+     return control_logic.control_modes.get(session_id, {})
 
 @api_router.get("/simulation/{session_id}/status")
 def get_state(session_id: str):
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail=f"Сессия '{session_id}' не найдена или еще не загружена.")
     return sessions[session_id].get_status()
 
 
@@ -144,9 +149,9 @@ async def load_session(data: LoadSessionRequest):
         control_logic.manual_overrides[session_id] = {}
 
         # Создаем и запускаем OPC-адаптер для этой сессии
-        opc_adapter = OPCAdapter(SERVER_URL, control_logic, sessions, update_opc_from_model_state)
+        opc_adapter = OPCAdapter(SERVER_URL, control_logic, sessions, update_opc_from_model_state, session_id)
         opc_adapters[session_id] = opc_adapter
-        asyncio.create_task(opc_adapter.run(session_id))
+        asyncio.create_task(opc_adapter.run())
 
         # Запускаем фоновую задачу обновления модели для этой сессии
         asyncio.create_task(update_loop(session_id))

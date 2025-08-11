@@ -68,11 +68,10 @@ export const sendManualCommand = (sessionId, component, param, value) => {
   });
 };
 
-export const sendManualOverrides = (sessionId, component, overrides) => {
+export const sendManualOverride = (sessionId, component, param, value) => {
   return api.post(`/simulation/${sessionId}/control/overrides`, {
-    component: component,
-    // Эти два поля ожидает ваш бэкенд
-    param: Object.keys(overrides), 
-    value: Object.values(overrides)
+    component,
+    param,
+    value
   });
 };
