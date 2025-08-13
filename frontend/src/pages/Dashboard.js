@@ -49,7 +49,7 @@ function Dashboard() {
       setError(null); // Сбрасываем все предыдущие ошибки и сообщения о загрузке.
 
       // 1. Обрабатываем статус модели (мы знаем, что он успешен)
-      const flatData = statusResult.value.data.components || {}; // Добавлена проверка на components
+      const flatData = statusResult.value.data || {}; // Добавлена проверка на components
       const grouped = { pumps: {}, valves: {}, oil_systems: {} };
       for (const [key, value] of Object.entries(flatData)) {
         if (key.startsWith("pump_")) grouped.pumps[key] = value;
