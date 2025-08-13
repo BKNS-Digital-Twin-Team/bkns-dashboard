@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 // --- ИСПРАВЛЕНИЕ ЗДЕСЬ ---
 // Импортируем нашу НОВУЮ функцию в единственном числе
 import { sendManualOverride } from '../api/twinApi'; 
-
+import * as api from '../api/twinApi';
 // "Красивые" имена для параметров на русском языке
 const PARAM_NAMES = {
   // ... (весь ваш объект PARAM_NAMES остается без изменений)
