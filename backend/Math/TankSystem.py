@@ -1,5 +1,5 @@
-from .tanks.Tank import Tank
-from .sensors.tank_sensors import TankDensitySensor,TankFlowRateSensor,TankLevelSensor,TankTemperatureSensor
+from tanks.Tank import Tank
+from sensors.tank_sensors import TankDensitySensor,TankFlowRateSensor,TankLevelSensor,TankTemperatureSensor
 class TankSystem:
     def __init__(self, volume_max=10.0):
         # Модель резервуара

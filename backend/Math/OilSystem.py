@@ -2,7 +2,7 @@ import asyncio
 import json
 import math
 import time
-from .tanks.OilTank import OilTank
+from tanks.OilTank import OilTank
 from asyncua import Client, ua, Server
 
 

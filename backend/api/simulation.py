@@ -116,31 +116,25 @@ class LoadSessionRequest(BaseModel):
 
 @api_router.post("/simulation/session/load")
 async def load_session(data: LoadSessionRequest):
-    # ID сессии теперь - это имя папки, которое передал клиент.
+
     session_id = data.session_name
 
-    # КЛЮЧЕВАЯ ПРОВЕРКА: Не пытаемся ли мы загрузить сессию, которая уже активна?
     if session_id in sessions:
-        # Код 409 Conflict идеально подходит для этой ситуации.
         raise HTTPException(status_code=409, detail=f"Сессия '{session_id}' уже загружена и активна.")
 
     try:
-        # Наше соглашение: в каждой папке сессии лежит файл с именем 'config.py'
         config_filename = "config.py"
         full_path = f"./sessions/{session_id}/{config_filename}"
 
-        # Проверяем, существует ли такой файл, перед тем как его загружать
         if not os.path.exists(full_path):
              raise FileNotFoundError(f"Конфигурационный файл не найден: {full_path}")
 
-        # Загружаем модуль из этого конкретного файла
         spec = importlib.util.spec_from_file_location(session_id, full_path)
         config_module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(config_module)
 
         model = config_module.MODEL
 
-        # Инициализируем ВСЕ состояния для этой сессии
         sessions[session_id] = model
         session_states[session_id] = {"running": True}
         previous_states[session_id] = {}
@@ -148,12 +142,10 @@ async def load_session(data: LoadSessionRequest):
         control_logic.control_modes[session_id] = {}
         control_logic.manual_overrides[session_id] = {}
 
-        # Создаем и запускаем OPC-адаптер для этой сессии
         opc_adapter = OPCAdapter(SERVER_URL, control_logic, sessions, update_opc_from_model_state, session_id)
         opc_adapters[session_id] = opc_adapter
         asyncio.create_task(opc_adapter.run())
 
-        # Запускаем фоновую задачу обновления модели для этой сессии
         asyncio.create_task(update_loop(session_id))
 
         print(f"[SYSTEM] Сессия '{session_id}' успешно загружена из папки.")

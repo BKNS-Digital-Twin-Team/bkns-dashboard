@@ -1,7 +1,7 @@
 import numpy as np
 import time
-from .OilSystem import OilSystem
-from .Pipe import PipeModel
+from OilSystem import OilSystem
+from Pipe import PipeModel
 
 
 class CentrifugalPump:
@@ -24,11 +24,11 @@ class CentrifugalPump:
         # Motor parameters
         self.nominal_current = 10.0  # A (номинальный ток двигателя)
         self.current_reduction_step = 0.1  # шаг уменьшения тока при остановке
- 
+
         # Temperature parameters
         self.ambient_temp = 25.0  # °C (температура окружающей среды)
         self.max_operating_temp = 40.0  # °C (максимальная рабочая температура)
-        self.temp_rise_rate = 0.25  # скорость роста температуры °C/сек
+        self.temp_rise_rate = 0.5  # скорость роста температуры °C/сек
         self.temp_cooling_rate = 0.32  # скорость охлаждения °C/сек
         self.temp_dry_run_rise_rate = 0.25  # скорость роста температуры при работе "всухую"
         self.temp_closed_valve_rise_rate = 0.18  # скорость роста температуры при закрытой задвижке
@@ -140,27 +140,29 @@ class CentrifugalPump:
         return delta_p
 
     def calculate_current(self):
-        """Находим ток насоса"""
+        """Расчет тока двигателя насоса с плавными переходами между режимами"""
         if not self.na_on or self.current_omega < self.min_shaft_speed_threshold:
             return 0.0
 
-        # Ток зависит от режима работы
+        # Определяем целевой ток для текущего режима
         if self.operation_mode == self.OPERATION_MODE_NORMAL:
-            current = self.nominal_current * (self.current_omega / self.reference_shaft_speed)
+            target_current = self.nominal_current * (self.current_omega / self.reference_shaft_speed)
         elif self.operation_mode == self.OPERATION_MODE_INLET_CLOSED:
-            # При закрытой входной задвижке ток сначала падает, потом растет
             time_in_mode = self.simulation_time - self.mode_change_time
-            if time_in_mode < 5.0:  # Первые 5 секунд
-                current = self.nominal_current * (self.current_omega / self.reference_shaft_speed) * 0.7
+            if time_in_mode < 5.0:
+                target_current = self.nominal_current * (self.current_omega / self.reference_shaft_speed) * 0.7
             else:
-                current = self.nominal_current * (self.current_omega / self.reference_shaft_speed) * 1.3
-        #ИЗМЕНЕНО
-        elif self.operation_mode == self.OPERATION_MODE_OUTLET_CLOSED:  
-            # При закрытой выходной задвижке ток увеличивается
-            current = self.nominal_current * (self.current_omega / self.reference_shaft_speed) * 1.5
-        else: #Режим с обеими закрытыми
-                        current = self.nominal_current * (self.current_omega / self.reference_shaft_speed) * 0.5
-        
+                target_current = self.nominal_current * (self.current_omega / self.reference_shaft_speed) * 1.3
+        elif self.operation_mode == self.OPERATION_MODE_OUTLET_CLOSED:
+            target_current = self.nominal_current * (self.current_omega / self.reference_shaft_speed) * 1.5
+        else:  # Режим с обеими закрытыми
+            target_current = self.nominal_current * (self.current_omega / self.reference_shaft_speed) * 0.5
+
+        # Плавный переход к целевому току
+        current = self.current_motor_i + (target_current - self.current_motor_i) * 0.3 * (
+                    self.current_omega / self.reference_shaft_speed)
+
+        # Добавляем случайные колебания, если ток выше 80% от номинального
         if current >= self.nominal_current * 0.8:
             current += np.random.uniform(-self.current_fluctuation, self.current_fluctuation)
 
@@ -168,37 +170,39 @@ class CentrifugalPump:
 
     def update_temperatures(self):
         """Изменяем температуру на выходе насоса в зависимости от режима работы"""
-        if not self.na_on or self.current_omega < self.min_shaft_speed_threshold:
+        if not self.na_on or self.current_omega < self.min_shaft_speed_threshold or (
+                self.NA_AI_T_1_n > self.max_operating_temp):
             delta_temp = self.temp_cooling_rate
             self.NA_AI_T_1_n = max(self.NA_AI_T_1_n - delta_temp, self.ambient_temp)
             self.NA_AI_T_2_n = max(self.NA_AI_T_2_n - delta_temp, self.ambient_temp)
-            self.NA_AI_T_3_n = max(self.NA_AI_T_3_n - delta_temp * 1.2, self.ambient_temp)
+            self.NA_AI_T_3_n = max(self.NA_AI_T_3_n - delta_temp, self.ambient_temp)
             self.NA_AI_T_4_n = max(self.NA_AI_T_4_n - delta_temp, self.ambient_temp)
-            self.NA_AI_T_5_n = max(self.NA_AI_T_5_n - delta_temp * 0.8, self.ambient_temp)
+            self.NA_AI_T_5_n = max(self.NA_AI_T_5_n - delta_temp, self.ambient_temp)
             return
 
         # Определяем скорость роста температуры в зависимости от режима
         if self.operation_mode == self.OPERATION_MODE_NORMAL:
             temp_factor = (self.current_motor_i / self.nominal_current) * (
-                        self.current_omega / self.reference_shaft_speed)
+                    self.current_omega / self.reference_shaft_speed)
             delta_temp = self.temp_rise_rate * temp_factor
         elif self.operation_mode == self.OPERATION_MODE_INLET_CLOSED:
             # При закрытой входной задвижке температура растет быстрее
             time_in_mode = self.simulation_time - self.mode_change_time
             delta_temp = self.temp_dry_run_rise_rate * (1 + time_in_mode / 20)  # Температура растет со временем
-        #ИЗМЕНЕНО
-        #При закрытой выходной задвижке
+        # ИЗМЕНЕНО
+        # При закрытой выходной задвижке
         elif self.operation_mode == self.OPERATION_MODE_OUTLET_CLOSED:
             delta_temp = self.temp_closed_valve_rise_rate
-        else:  #обе задвижки закрыты
+        else:  # обе задвижки закрыты
             delta_temp = self.temp_closed_valve_rise_rate * 1.5
 
         # Применяем изменение температуры
-        self.NA_AI_T_1_n = min(self.NA_AI_T_1_n + delta_temp * 1.3 + int(not(self.bond_oil_system.pressure_ok)) * 3, self.max_operating_temp)
-        self.NA_AI_T_2_n = min(self.NA_AI_T_2_n + delta_temp + int(not(self.bond_oil_system.pressure_ok)) * 3, self.max_operating_temp)
-        self.NA_AI_T_3_n = min(self.NA_AI_T_3_n + delta_temp * 1.1 + int(not(self.bond_oil_system.pressure_ok)) * 3, self.max_operating_temp)
-        self.NA_AI_T_4_n = min(self.NA_AI_T_4_n + delta_temp * 0.9 + int(not(self.bond_oil_system.pressure_ok)) * 3, self.max_operating_temp)
-        self.NA_AI_T_5_n = min(self.NA_AI_T_5_n + delta_temp * 0.7 + int(not(self.bond_oil_system.pressure_ok)) * 3, self.max_operating_temp)
+        if self.NA_AI_T_1_n < self.max_operating_temp:
+            self.NA_AI_T_1_n = self.NA_AI_T_1_n + delta_temp + int(not (self.bond_oil_system.pressure_ok)) * 3
+            self.NA_AI_T_2_n = self.NA_AI_T_2_n + delta_temp + int(not (self.bond_oil_system.pressure_ok)) * 3
+            self.NA_AI_T_3_n = self.NA_AI_T_3_n + delta_temp + int(not (self.bond_oil_system.pressure_ok)) * 3
+            self.NA_AI_T_4_n = self.NA_AI_T_4_n + delta_temp + int(not (self.bond_oil_system.pressure_ok)) * 3
+            self.NA_AI_T_5_n = self.NA_AI_T_5_n + delta_temp + int(not (self.bond_oil_system.pressure_ok)) * 3
 
         # Добавляем дребезг
         self.NA_AI_T_1_n = self.apply_fluctuation(self.NA_AI_T_1_n, self.max_operating_temp, self.temp_fluctuation)
@@ -206,6 +210,7 @@ class CentrifugalPump:
         self.NA_AI_T_3_n = self.apply_fluctuation(self.NA_AI_T_3_n, self.max_operating_temp, self.temp_fluctuation)
         self.NA_AI_T_4_n = self.apply_fluctuation(self.NA_AI_T_4_n, self.max_operating_temp, self.temp_fluctuation)
         self.NA_AI_T_5_n = self.apply_fluctuation(self.NA_AI_T_5_n, self.max_operating_temp, self.temp_fluctuation)
+        return
 
     def detect_operation_mode(self, q, p_in, p_out):
         """Определяем текущий режим работы насоса"""
@@ -214,7 +219,7 @@ class CentrifugalPump:
         low_inlet_pressure_threshold = 0.2  # МПа
         high_outlet_pressure_threshold = self.max_head_zero_capacity * 1000 * 9.81 / 1e6  # Макс. давление в МПа
 
-        #ИЗМЕНЕНО
+        # ИЗМЕНЕНО
         if q < low_flow_threshold and p_in < low_inlet_pressure_threshold and p_out > high_outlet_pressure_threshold * 0.9:
             new_mode = self.OPERATION_MODE_BOTH_CLOSED
         elif q < low_flow_threshold and p_in < low_inlet_pressure_threshold:
@@ -254,22 +259,23 @@ class CentrifugalPump:
         # Определяем текущий режим работы
         if inlet and outlet:
             self.operation_mode = self.OPERATION_MODE_NORMAL
-        elif not(inlet) and outlet:
+        elif not (inlet) and outlet:
             self.operation_mode = self.OPERATION_MODE_INLET_CLOSED
-        elif inlet and not(outlet):
+        elif inlet and not (outlet):
             self.operation_mode = self.OPERATION_MODE_OUTLET_CLOSED
         else:
             self.operation_mode = self.OPERATION_MODE_BOTH_CLOSED
 
-        if self.bond_oil_system.pressure_ok:
-            self.max_operating_temp = 40
-        else:
+        if not (self.bond_oil_system.pressure_ok) or self.operation_mode == self.OPERATION_MODE_BOTH_CLOSED:
             self.max_operating_temp = 60
+        else:
+            self.max_operating_temp = 40
 
         if self.na_on:
             # Поведение насоса зависит от режима работы
             if self.operation_mode == self.OPERATION_MODE_NORMAL:
-                self.p_in = self.p_in_outside
+                if self.p_in_outside > self.p_in:
+                    self.p_in = min(self.p_in + 0.072, self.p_in_outside)
                 delta_p = self.calculate_pressure_gain(q, rho)
                 self.p_out = self.p_in + (delta_p / 1e6)
                 self.NA_AI_Qmom_n = q * (self.current_omega / target_omega)
@@ -283,7 +289,8 @@ class CentrifugalPump:
             elif self.operation_mode == self.OPERATION_MODE_OUTLET_CLOSED:
                 # При закрытой выходной задвижке
                 delta_p = self.calculate_pressure_gain(0, rho)  # Расход нулевой
-                self.p_in = self.p_in_outside
+                if self.p_in_outside > self.p_in:
+                    self.p_in = min(self.p_in + 0.072, self.p_in_outside)
                 self.p_out = self.p_in + (delta_p / 1e6)  # Давление на выходе растет
                 self.NA_AI_Qmom_n = 0.0  # Расход нулевой
 
@@ -317,15 +324,13 @@ class CentrifugalPump:
         """Чисто чтобы смотреть"""
         mode = self.get_operation_mode_name()
         return (f"{self.simulation_time:8.1f} | {self.current_omega:7.1f} | {self.current_motor_i:4.1f}A | "
-                f"{self.p_out:7.10f}MPa | {self.NA_AI_T_2_n:.1f}°C {self.NA_AI_T_3_n:.1f}°C "
+                f"{self.p_out:7.10f}MPa | {self.NA_AI_T_1_n:.1f}°C {self.NA_AI_T_2_n:.1f}°C {self.NA_AI_T_3_n:.1f}°C "
                 f"{self.NA_AI_T_4_n:.1f}°C {self.NA_AI_T_5_n:.1f}°C | {self.NA_AI_Qmom_n:.2f}m³/s | {mode}")
-
-
 
 
 if __name__ == "__main__":
     oil_system = OilSystem(0)
-    pump = CentrifugalPump(oil_system,'NA4')
+    pump = CentrifugalPump(oil_system, 'NA4')
     pipe = PipeModel()
 
     m_dot_A = 0.5
@@ -343,7 +348,8 @@ if __name__ == "__main__":
 
     pump.na_start = True
     oil_system.start()
-
+    inlet = True
+    outlet = True
     try:
         while True:
             # ИЗМЕНЕНО
@@ -356,20 +362,29 @@ if __name__ == "__main__":
                 dt=0.5
             )
             # Управление режимами насоса
-            if iteration_count == 100:
+            if iteration_count == 60:
                 print("\n=== ПЕРЕКЛЮЧЕНИЕ В РЕЖИМ ЗАКРЫТОЙ ВХОДНОЙ ЗАДВИЖКИ ===")
                 # В реальной системе это было бы вызвано внешним событием,
                 # но здесь мы просто изменяем параметры, которые приведут к автоматическому
                 # определению режима в методе detect_operation_mode()
-                pump.na_stop = True
+                inlet = False
+                outlet = False
+            if iteration_count == 120:
+                print("\n=== ПЕРЕКЛЮЧЕНИЕ В РЕЖИМ ЗАКРЫТОЙ ВХОДНОЙ ЗАДВИЖКИ ===")
+                # В реальной системе это было бы вызвано внешним событием,
+                # но здесь мы просто изменяем параметры, которые приведут к автоматическому
+                # определению режима в методе detect_operation_mode()
+                inlet = True
+                outlet = True
 
             # Основной шаг симуляции
-            pump.step(target_omega, q, rho, True, True)
+            pump.step(target_omega, q, rho, inlet, outlet)
             print(pump.get_status())
 
             # Рассчитываем выходное давление
             pipe.compute_output_pressure(pump.p_out, m_dot_A, m_dot_B, mu, rho, pump.NA_AI_T_5_n)
             print(f"Output pressure to separator: {pipe.p_out:.10f} Pa, {pipe.T:.2f}")
+            print(f"maxoper: {pump.max_operating_temp}", )
 
             time.sleep(1)
             iteration_count += 1

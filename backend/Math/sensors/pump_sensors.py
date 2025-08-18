@@ -2,7 +2,7 @@ from .analog_current_sensor import AnalogCurrentSensor
 # ДАТЧИК ТЕМПЕРАТУРЫ НАСОСА
 class PumpTemperatureSensor(AnalogCurrentSensor):
     """Моделирует аналоговый датчик температуры различных частей насоса (0–120°C)."""
-    def __init__(self, temp_min=0.0, temp_max=40.0):  # °C
+    def __init__(self, temp_min=0.0, temp_max=45.0):  # °C
         super().__init__(temp_min, temp_max)
 
     def measure_current(self, temp):
