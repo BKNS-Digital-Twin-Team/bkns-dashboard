@@ -99,27 +99,27 @@ function Dashboard() {
 
       <SystemStatus status={modelStatus} />
 
-      <div className="mt-6">
+      <div className="mt-6 component-section">
         <h2 className="text-2xl font-semibold mb-4 text-gray-700">Насосы</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="components-grid">
           {Object.entries(modelStatus.pumps || {}).map(([key, value]) => (
             <ComponentCard key={key} name={key} data={value} sessionId={sessionId} controlModes={controlModes} onUpdate={fetchData} />
           ))}
         </div>
       </div>
 
-      <div className="mt-6">
+      <div className="mt-6 component-section">"
         <h2 className="text-2xl font-semibold mb-4 text-gray-700">Выходные задвижки</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="components-grid">
           {Object.entries(modelStatus.valves || {}).map(([key, value]) => (
             <ComponentCard key={key} name={key} data={value} sessionId={sessionId} controlModes={controlModes} onUpdate={fetchData} />
           ))}
         </div>
       </div>
 
-      <div className="mt-6">
+      <div className="mt-6 component-section">"
         <h2 className="text-2xl font-semibold mb-4 text-gray-700">Маслосистемы</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="components-grid">
           {Object.entries(modelStatus.oil_systems || {}).map(([key, value]) => (
             <ComponentCard key={key} name={key} data={value} sessionId={sessionId} controlModes={controlModes} onUpdate={fetchData} />
           ))}

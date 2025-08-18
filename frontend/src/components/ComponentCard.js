@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 // --- ИСПРАВЛЕНИЕ ЗДЕСЬ ---
 // Импортируем нашу НОВУЮ функцию в единственном числе
-import { sendManualOverride } from '../api/twinApi'; 
 import * as api from '../api/twinApi';
 // "Красивые" имена для параметров на русском языке
 const PARAM_NAMES = {
@@ -67,7 +66,7 @@ const ComponentCard = ({ name, data, sessionId, onUpdate }) => {
   };
   
   return (
-    <div className="bg-white p-4 rounded-lg shadow-md flex flex-col justify-between">
+    <div className="component-card flex flex-col justify-between">
       <div>
         <h3 className="font-bold text-lg mb-2 text-gray-800 capitalize">{name.replace(/_/g, ' ')}</h3>
         
@@ -88,7 +87,7 @@ const ComponentCard = ({ name, data, sessionId, onUpdate }) => {
                     <input
                       type="number"
                       placeholder="Override"
-                      className="border rounded px-2 py-1 w-32 text-right"
+                      className="input border rounded px-2 py-1 w-32 text-right"
                       value={overrides[key] || ''}
                       onChange={(e) => handleOverrideChange(key, e.target.value)}
                     />
@@ -103,7 +102,7 @@ const ComponentCard = ({ name, data, sessionId, onUpdate }) => {
       <div className="mt-4 pt-4 border-t">
         <button
           onClick={applyOverrides}
-          className="w-full bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
+          className="enter-button"
         >
           Применить ручные значения
         </button>
