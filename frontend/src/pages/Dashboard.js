@@ -84,23 +84,23 @@ function Dashboard() {
   }, [fetchData]); // Зависимость от memoized-функции fetchData
 
   return (
-    <div className="App p-6 bg-gray-100 min-h-screen">
-      <h1 className="text-3xl font-bold mb-6 text-gray-800">Панель управления: Сессия '{sessionId}'</h1>
+    <div className="App">
+      <h1 >Панель управления: Сессия '{sessionId}'</h1>
       
-      <div className="bg-white p-4 rounded-lg shadow-md mb-6">
+      <div className="simulation-controls">
         <SimulationControls
           sessionId={sessionId}
           simulationMode={simulationMode}
-          onStateChange={fetchData} // Теперь можно безопасно передавать fetchData
+          onStateChange={fetchData}
         />
       </div>
 
-      {error && <div className="text-center text-yellow-600 bg-yellow-100 p-3 rounded-md mb-6">{error}</div>}
+      {error && <div className="error-message">{error}</div>}
 
       <SystemStatus status={modelStatus} />
 
-      <div className="mt-6 component-section">
-        <h2 className="text-2xl font-semibold mb-4 text-gray-700">Насосы</h2>
+      <div className="component-section">
+        <h2 >Насосы</h2>
         <div className="components-grid">
           {Object.entries(modelStatus.pumps || {}).map(([key, value]) => (
             <ComponentCard key={key} name={key} data={value} sessionId={sessionId} controlModes={controlModes} onUpdate={fetchData} />
@@ -108,8 +108,8 @@ function Dashboard() {
         </div>
       </div>
 
-      <div className="mt-6 component-section">
-        <h2 className="text-2xl font-semibold mb-4 text-gray-700">Выходные задвижки</h2>
+      <div className="component-section">
+        <h2>Выходные задвижки</h2>
         <div className="components-grid">
           {Object.entries(modelStatus.valves || {}).map(([key, value]) => (
             <ComponentCard key={key} name={key} data={value} sessionId={sessionId} controlModes={controlModes} onUpdate={fetchData} />
@@ -117,8 +117,8 @@ function Dashboard() {
         </div>
       </div>
 
-      <div className="mt-6 component-section">
-        <h2 className="text-2xl font-semibold mb-4 text-gray-700">Маслосистемы</h2>
+      <div className="component-section">
+        <h2>Маслосистемы</h2>
         <div className="components-grid">
           {Object.entries(modelStatus.oil_systems || {}).map(([key, value]) => (
             <ComponentCard key={key} name={key} data={value} sessionId={sessionId} controlModes={controlModes} onUpdate={fetchData} />

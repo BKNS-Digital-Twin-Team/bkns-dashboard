@@ -6,25 +6,7 @@ import React, { useState } from 'react';
 import * as api from '../api/twinApi';
 // "Красивые" имена для параметров на русском языке
 const PARAM_NAMES = {
-  // ... (весь ваш объект PARAM_NAMES остается без изменений)
-  na_on: 'Насос включен',
-  na_off: 'Насос выключен',
-  motor_current: 'Ток двигателя (А)',
-  pressure_in: 'Давление на входе (МПа)',
-  pressure_out: 'Давление на выходе (МПа)',
-  flow_rate: 'Расход (м³/с)',
-  temp_bearing_1: 'T подшипника 1 (°C)',
-  temp_bearing_2: 'T подшипника 2 (°C)',
-  temp_motor_1: 'T мотора 1 (°C)',
-  temp_motor_2: 'T мотора 2 (°C)',
-  temp_water: 'T воды (°C)',
-  cover_open: 'Крышка открыта',
-  oil_sys_running: 'Маслосистема в работе',
-  oil_sys_pressure_ok: 'Давление масла в норме',
-  oil_pressure: 'Давление масла (бар)',
-  temperature: 'Температура (°C)',
-  valve_open: 'Задвижка открыта',
-  valve_closed: 'Задвижка закрыта',
+
 };
 
 // Пропсы `type`, `mode`, `onModeToggle` не используются в новой версии,
@@ -61,8 +43,6 @@ const ComponentCard = ({ name, data, sessionId, onUpdate }) => {
     if (onUpdate) {
       onUpdate();
     }
-    // Очищаем локальные оверрайды после применения
-    setOverrides({});
   };
   
   return (

@@ -42,5 +42,10 @@
     "transformIgnorePatterns": [
       "/node_modules/(?!axios)/"
     ]
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.12"
   }
 }

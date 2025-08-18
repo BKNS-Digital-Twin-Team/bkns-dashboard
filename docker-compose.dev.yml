@@ -15,7 +15,7 @@ services:
       - opc-server
 
   frontend:
-    image: node:18
+    image: node:20
     working_dir: /app
     volumes:
       - ./frontend:/app
