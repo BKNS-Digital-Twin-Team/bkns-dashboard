@@ -180,9 +180,7 @@ class BKNS:
         self.last_update_time = time.time()
         self.update_system()
 
-
-
-    def  update_system(self):
+    def update_system(self):
         """
         Основной метод обновления состояния всей системы.
         Выполняется циклически для симуляции работы БКНС.
@@ -461,7 +459,6 @@ class BKNS:
                 }
 
         return status
-
 
     def _format_sensors_table(self, status: Dict) -> str:
         lines = []

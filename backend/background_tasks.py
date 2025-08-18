@@ -14,7 +14,7 @@ async def update_loop(session_id: str):
     while session_id in sessions:
         try:
             if session_states.get(session_id, {}).get("running", False):
-                model.step(1)
+                model.update_system()
                 
                 current_state = model.get_status()
                 

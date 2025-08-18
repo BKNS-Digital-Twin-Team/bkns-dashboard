@@ -108,7 +108,7 @@ function Dashboard() {
         </div>
       </div>
 
-      <div className="mt-6 component-section">"
+      <div className="mt-6 component-section">
         <h2 className="text-2xl font-semibold mb-4 text-gray-700">Выходные задвижки</h2>
         <div className="components-grid">
           {Object.entries(modelStatus.valves || {}).map(([key, value]) => (
@@ -117,7 +117,7 @@ function Dashboard() {
         </div>
       </div>
 
-      <div className="mt-6 component-section">"
+      <div className="mt-6 component-section">
         <h2 className="text-2xl font-semibold mb-4 text-gray-700">Маслосистемы</h2>
         <div className="components-grid">
           {Object.entries(modelStatus.oil_systems || {}).map(([key, value]) => (

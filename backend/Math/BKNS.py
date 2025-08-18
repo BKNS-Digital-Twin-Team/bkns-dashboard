@@ -1,14 +1,14 @@
 import time
 from typing import Dict
-from OilSystem import OilSystem
-from Pump import CentrifugalPump
-from Pipe import PipeModel
-from Valve import Valve
-from sensors.valve_sensors import ValveTemperatureSensor, ValvePressureSensor,ValvePositionSensor
-from sensors.pump_sensors import PumpFlowSensor,PumpMotorCurrentSensor,PumpPressureSensor,PumpShaftSpeedSensor,PumpTemperatureSensor
-from sensors.pipe_sensors import PipePressureSensor,PipeTemperatureSensor
-from sensors.oil_sensors import  OilFlowSensor, OilTemperatureSensor
-from sensors.tank_sensors import TankLevelSensor, TankDensitySensor, TankTemperatureSensor, TankFlowRateSensor
+from Math.OilSystem import OilSystem
+from Math.Pump import CentrifugalPump
+from Math.Pipe import PipeModel
+from Math.Valve import Valve
+from Math.sensors.valve_sensors import ValveTemperatureSensor, ValvePressureSensor,ValvePositionSensor
+from Math.sensors.pump_sensors import PumpFlowSensor,PumpMotorCurrentSensor,PumpPressureSensor,PumpShaftSpeedSensor,PumpTemperatureSensor
+from Math.sensors.pipe_sensors import PipePressureSensor,PipeTemperatureSensor
+from Math.sensors.oil_sensors import  OilFlowSensor, OilTemperatureSensor
+from Math.sensors.tank_sensors import TankLevelSensor, TankDensitySensor, TankTemperatureSensor, TankFlowRateSensor
 
 
 class BKNS:
@@ -594,8 +594,6 @@ class BKNS:
         lines.append("")
 
         return "\n".join(lines)
-
-
 
 
     def __str__(self):

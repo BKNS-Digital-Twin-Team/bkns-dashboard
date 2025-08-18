@@ -1,7 +1,7 @@
 import numpy as np
 import time
-from OilSystem import OilSystem
-from Pipe import PipeModel
+from Math.OilSystem import OilSystem
+from Math.Pipe import PipeModel
 
 
 class CentrifugalPump:
