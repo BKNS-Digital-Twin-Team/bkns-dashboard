@@ -176,10 +176,10 @@ class OPCAdapter:
     async def send_to_opc(self, component_id, param, value):
         """Находит NodeId по параметру и отправляет значение на сервер."""
         key = (component_id, param)
-        if self.last_sent_values.get(key) == value:
-            return
+        # if self.last_sent_values.get(key) == value:
+        #     return
 
-        self.last_sent_values[key] = value
+        # self.last_sent_values[key] = value
 
         node_id = None
         for nid, info in self.OPC_NODE_MAPPING.items():

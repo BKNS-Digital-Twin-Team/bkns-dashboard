@@ -75,7 +75,7 @@ async def update_opc_from_model_state(session_id, force_send_all=False):
         for param, value in params.items():
             key = (component, param)
             if force_send_all or previous_states[session_id].get(key) != value:
-                opc_adapters[session_id].process_command("MODEL", component, param, value)
+                await opc_adapters[session_id].send_to_opc(component, param, value)
                 previous_states[session_id][key] = value
                 
     if force_send_all:

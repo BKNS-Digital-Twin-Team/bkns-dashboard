@@ -18,7 +18,7 @@ async def update_loop(session_id: str):
                 
                 current_state = model.get_status()
                 
-                await update_opc_from_model_state(session_id, current_state)
+                await update_opc_from_model_state(session_id)
                 
                 previous_states[session_id] = current_state
 
