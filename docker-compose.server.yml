@@ -3,14 +3,14 @@ services:
   backend:
     image: kolchedan/bkns-dashboard-backend:latest
     ports:
-      - "8000:8000"
-      - "80:8000"  # Также на 80 порту для фронта
+      - "8021:8000"  # Также на 80 порту для фронта
     environment:
       - OPC_SERVER_URL=opc.tcp://opc-server:4840/freeopcua/server/
       - DEV_MODE=false
       - STATIC_FILES_DIR=/app/build  # Статика внутри backend образа
+      - REACT_APP_API_URL=/api
     volumes:
-      - ./sessions:/app/sessions  # Папка с сессиями
+      - ./sessions:/app/sessions:rw  # Папка с сессиями
     depends_on:
       - opc-server
     restart: unless-stopped
@@ -18,7 +18,7 @@ services:
   opc-server:
     image: kolchedan/bkns-dashboard-opc-server:latest
     ports:
-      - "4840:4840"
+      - "8020:4840"
     restart: unless-stopped
 
 networks:
