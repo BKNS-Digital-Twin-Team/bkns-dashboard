@@ -1,0 +1,40 @@
+services:
+  frontend-builder:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: builder  # Остановимся на этапе сборки
+    volumes:
+      - frontend-build:/app/build  # Сохраняем собранные файлы
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    volumes:
+      - frontend-build:/build  # Подключаем собранный фронтенд
+    ports:
+      - "8000:8000"
+    environment:
+      - OPC_SERVER_URL=opc.tcp://opc-server:4840/freeopcua/server/
+      - DEV_MODE=false
+      - STATIC_FILES_DIR=/build
+    depends_on:
+      - frontend-builder
+      - opc-server
+    restart: unless-stopped
+
+  opc-server:
+    build:
+      context: ./opc_server
+      dockerfile: Dockerfile
+    ports:
+      - "4840:4840"
+    restart: unless-stopped
+
+volumes:
+  frontend-build:  # Shared volume для передачи файлов
+
+networks:
+  default:
+    driver: bridge

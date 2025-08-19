@@ -24,6 +24,7 @@ async def lifespan(app: FastAPI):
     print("Все адаптеры остановлены.")
 
 app = FastAPI(lifespan=lifespan)
+app.include_router(simulation_router)
 
 # Разрешаем CORS в dev-режиме
 if os.getenv("DEV_MODE") == "true":
@@ -41,4 +42,3 @@ else:
         STATIC_FILES_DIR = "./backend/build/"
     app.mount("/", StaticFiles(directory=STATIC_FILES_DIR, html=True), name="static")
 
-app.include_router(simulation_router)

@@ -192,8 +192,6 @@ class OPCAdapter:
             return
 
         try:
-            # === ЭТОТ БЛОК БЫЛ СЛУЧАЙНО УДАЛЕН. ВОЗВРАЩАЕМ ЕГО. ===
-            # 1. Определяем тип данных Python
             variant_type = ua.VariantType.Boolean
             if isinstance(value, float):
                 variant_type = ua.VariantType.Double

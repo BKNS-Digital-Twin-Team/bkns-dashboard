@@ -418,10 +418,8 @@ class BKNS:
 
         valve.control(command)
     
+    
     def get_status(self) -> Dict:
-        """
-        Возвращает текущее состояние системы в виде словаря.
-        """
         status = {
             'pumps': {},  # Словарь для данных по насосам
             'main_inlet': {  # Данные по входной трубе
@@ -664,62 +662,10 @@ if __name__ == "__main__":
     bkns.control_oil_pump(1, True)
 
     print("=== Начало симуляции БКНС ===")
-    try:
-        for i in range(45):  # Увеличиваем длительность для демонстрации новых сценариев
-            bkns.update_system()
-            print(f"\n=== Состояние БКНС через {i} секунд ===")
-            print(bkns)
+    
+    bkns.update_system()
+    
+    print(bkns.get_status())
 
-            # --- Режимы работы одного насоса (NA4) ---
-            if i == 5:
-                print("\n>>> Запускаем насос NA4")
-                bkns.control_pump(0, True)
-            if i == 10:
-                print("\n>>> Закрываем выходную задвижку NA4")
-                bkns.control_valve('out_0', False)
-            if i == 14:
-                print("\n>>> Повторная попытка закрыть выходную задвижку NA4")
-                bkns.control_valve('out_0', False)
-            if i == 16:
-                print("\n>>> Открываем выходную задвижку NA4")
-                bkns.control_valve('out_0', True)
-            if i == 18:
-                print("\n>>> Останавливаем насос NA4")
-                bkns.control_pump(0, False)
-            if i == 20:
-                print("\n>>> Останавливаем маслонасос NA4")
-                bkns.control_oil_pump(0, False)
-
-            # --- Работа двух насосов одновременно ---
-            if i == 22:
-                print("\n>>> Запускаем насос NA4 и насос NA2 одновременно")
-                bkns.control_pump(0, True)
-                bkns.control_pump(1, True)
-                bkns.control_oil_pump(0, True)
-                bkns.control_oil_pump(1, True)
-            if i == 25:
-                print("\n>>> Закрываем входную задвижку NA2 (симуляция 'закрыта входная')")
-                bkns.control_valve('in_1', False)
-            if i == 28:
-                print("\n>>> Открываем входную задвижку NA2")
-                bkns.control_valve('in_1', True)
-
-            # --- Работа насоса без масла (маслосистема выключена) ---
-            if i == 30:
-                print("\n>>> Останавливаем маслонасос NA2 (симуляция работы насоса без масла)")
-                bkns.control_oil_pump(1, False)
-            if i == 32:
-                print("\n>>> Останавливаем насос NA2")
-                bkns.control_pump(1, False)
-            if i == 35:
-                print("\n>>> Запускаем насос NA2 без маслонасоса (опасный режим!)")
-                bkns.control_pump(1, True)
-            if i == 40:
-                print("\n>>> Запускаем маслонасос NA2")
-                bkns.control_oil_pump(1, True)
-
-            time.sleep(1)
-
-    except KeyboardInterrupt:
-        print("\nСимуляция остановлена пользователем")
+        
 #log_file.close()

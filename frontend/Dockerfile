@@ -1,10 +1,16 @@
-FROM node:24.4.1 as builder
+FROM node:20-alpine as builder
 
 WORKDIR /app
 
-COPY . /app/frontend
+# Копируем package файлы
+COPY package*.json ./
+RUN npm ci
 
-RUN npm install && npm run build
+# Копируем исходники и собираем
+COPY . .
+RUN npm run build
+
+# Результат будет в /app/build
 
 
 
