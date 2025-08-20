@@ -8,7 +8,6 @@ services:
       - OPC_SERVER_URL=opc.tcp://opc-server:4840/freeopcua/server/
       - DEV_MODE=false
       - STATIC_FILES_DIR=/app/build  # Статика внутри backend образа
-      - REACT_APP_API_URL=/api
     volumes:
       - ./sessions:/app/sessions:rw  # Папка с сессиями
     depends_on:
