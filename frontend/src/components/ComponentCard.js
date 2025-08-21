@@ -46,28 +46,29 @@ const ComponentCard = ({ name, data, sessionId, onUpdate }) => {
   };
   
   return (
-    <div className="component-card flex flex-col justify-between">
+    <div className="component-card">
       <div>
-        <h3 className="font-bold text-lg mb-2 text-gray-800 capitalize">{name.replace(/_/g, ' ')}</h3>
+        <h3 className="component-label">{name.replace(/_/g, ' ')}</h3>
         
-        <div className="space-y-2">
+        <div className="component-params">
           {data && Object.entries(data).map(([key, value]) => {
             if (typeof value !== 'number' && typeof value !== 'boolean') return null;
 
             const isOverridable = typeof value === 'number';
 
             return (
-              <div key={key} className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">{PARAM_NAMES[key] || key}:</span>
-                <div className="flex items-center">
-                  <span className={`font-semibold mr-2 ${typeof value === 'boolean' ? (value ? 'text-green-600' : 'text-red-600') : 'text-gray-900'}`}>
+              <div key={key} className="line">
+                
+                <div className="param">
+                  <span className="param-name">{PARAM_NAMES[key] || key}:</span>
+                  <span className={`param-value ${typeof value === 'boolean' ? (value ? 'text-green-600' : 'text-red-600') : 'text-gray-900'}`}>
                     {typeof value === 'boolean' ? (value ? 'Да' : 'Нет') : value.toFixed(3)}
                   </span>
                   {isOverridable && (
                     <input
                       type="number"
-                      placeholder="Override"
-                      className="input border rounded px-2 py-1 w-32 text-right"
+                      placeholder="num"
+                      className="param-override-input"
                       value={overrides[key] || ''}
                       onChange={(e) => handleOverrideChange(key, e.target.value)}
                     />
@@ -79,7 +80,7 @@ const ComponentCard = ({ name, data, sessionId, onUpdate }) => {
         </div>
       </div>
       
-      <div className="mt-4 pt-4 border-t">
+      <div className="button">
         <button
           onClick={applyOverrides}
           className="enter-button"

@@ -156,18 +156,50 @@ button:disabled {
   margin-bottom: 0.25rem;
 }
 
-.param-value {
-  font-size: 1.1rem;
-  margin-bottom: 0.25rem;
-  color: #222;
+.line, .param {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    width: 200px;
+    font-size: 16px;
+    font-style: normal;
+    margin-bottom: 1px;
+}
+
+.line > *:not(:last-child)::after,
+.param > *:not(:last-child)::after {
+    content: "|"; /* Вертикальная палочка */
+    margin: 0 5px; /* Отступы слева и справа от палочки */
+    color: #ccc; /* Цвет палочки */
 }
 
 .param-override-input {
-  padding: 0.4rem;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 1rem;
+    width: 50px;
+    padding: 5px;
+    font-size: 16px;
+    border: 0px;
+    border-radius: 4px;
+    -webkit-appearance: none;
+    -moz-appearance: textfield;
+    appearance: none;
 }
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+}
+
+input[type='number'] {
+    -moz-appearance: textfield;
+}
+
+.component-params {
+  margin-bottom: 20px;
+}
+
+
+
 
 /* src/pages/SessionSelector.css */
 
@@ -256,4 +288,3 @@ button:disabled {
 .enter-button:hover {
   background-color: #2980b9;
 }
-

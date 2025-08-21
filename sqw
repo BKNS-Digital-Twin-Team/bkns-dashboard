@@ -1,0 +1,281 @@
+[33mcommit ab8192733ef9bcd74f9c022834790fe77c740b64[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeat/integrate-new-math[m[33m)[m
+Author: Arseny <arsn4fun@gmail.com>
+Date:   Wed Aug 20 18:44:00 2025 +0300
+
+    fix:dockerfiles
+
+[33mcommit 4fefcb155c103cc39dfc72cbfc06d5017bfa6877[m
+Author: Arseny <arsn4fun@gmail.com>
+Date:   Wed Aug 20 01:25:17 2025 +0300
+
+    feat:add sync-sessions.sh
+
+[33mcommit 57dbf6024f9f40565ac67f0bd89b6d551bab27b0[m
+Author: Arseny <arsn4fun@gmail.com>
+Date:   Tue Aug 19 23:07:00 2025 +0300
+
+    feat: add CI/CD bash scripts and dock-comps
+
+[33mcommit 1c5029fe0ec66de0c13c0235db6343a06b1ad968[m
+Author: Arseny <arsn4fun@gmail.com>
+Date:   Mon Aug 18 22:28:36 2025 +0300
+
+    fix:backgroud_tasks & opc_adapter & opc_utils
+
+[33mcommit 9411a9c33e195a178e9ff5d2e32dfb11ca126f4a[m
+Author: Arseny <arsn4fun@gmail.com>
+Date:   Mon Aug 18 20:21:25 2025 +0300
+
+    fix: remove tailwind
+
+[33mcommit 051ad69463921dc7f1c1f885c13d68f877cda0d4[m
+Author: Arseny <arsn4fun@gmail.com>
+Date:   Mon Aug 18 18:26:59 2025 +0300
+
+    fix: module import pathes
+
+[33mcommit 48e7669553152a3fb8c96b9d803e6789bb762291[m
+Author: Arseny <arsn4fun@gmail.com>
+Date:   Mon Aug 18 17:03:17 2025 +0300
+
+    refactor: delete some comments
+
+[33mcommit 3719e8252b0deeba8fb84dda21a8ed2e30a36971[m[33m ([m[1;32mfeat/make-backend-multi-session[m[33m)[m
+Author: Arseny <arsn4fun@gmail.com>
+Date:   Mon Aug 18 16:11:57 2025 +0300
+
+    WIP
+
+[33mcommit 9b5c5186b52d441f1475b3e8742d53d333723267[m
+Author: Arseny <arsn4fun@gmail.com>
+Date:   Wed Aug 13 19:40:40 2025 +0300
+
+    fix: add import api in ComponentCard
+
+[33mcommit d3d504397fc80c939f751612e90b561f8d6fc136[m
+Author: Arseny <arsn4fun@gmail.com>
+Date:   Wed Aug 13 19:38:42 2025 +0300
+
+    fix: flatData() in Dashboard.js
+
+[33mcommit 16eaf5ef63e14d6139f0fb52b052688efad43cad[m[33m ([m[1;31morigin/feat/make-backend-multi-session[m[33m)[m
+Author: Arseny <arsn4fun@gmail.com>
+Date:   Mon Aug 11 19:43:05 2025 +0300
+
+    WIP
+
+[33mcommit 05ba620a0d6c1a17bc9bc44164c6e592e8a7120d[m
+Author: Arseny <arsn4fun@gmail.com>
+Date:   Mon Aug 11 18:35:16 2025 +0300
+
+    fix: opc_adapter and simulation.py
+
+[33mcommit 96d6b61b458e218b03ffdd1ca1b8361aeeae2471[m
+Author: Arseny <arsn4fun@gmail.com>
+Date:   Mon Aug 11 18:24:04 2025 +0300
+
+    fix: fix api
+
+[33mcommit 6fe22312d8ae844f1b8fb2f77403457115fac22a[m
+Author: Arseny <arsn4fun@gmail.com>
+Date:   Mon Aug 11 18:08:43 2025 +0300
+
+    fix: SessionSelector fix styles
+
+[33mcommit cab4d02b8744996792fcb857ffba5add0b29bf24[m
+Author: Arseny <arsn4fun@gmail.com>
+Date:   Mon Aug 11 17:03:56 2025 +0300
+
+    feat: move update_loop to background_tasks.py
+
+[33mcommit 10afb838ea3159e02622603a078ee6b60a1d5013[m
+Author: Arseny <arsn4fun@gmail.com>
+Date:   Mon Aug 11 16:56:54 2025 +0300
+
+    fix: twinapi sendmannual command request
+
+[33mcommit 8a71416bc74bb66f99a8f52a4a17f7251acef539[m
+Author: Arseny <arsn4fun@gmail.com>
+Date:   Mon Aug 11 16:36:06 2025 +0300
+
+    feat: prepare dashboard.js to multisession
+
+[33mcommit 53d5c28fd13119602868c61292e0f73db20baba9[m
+Author: Arseny <arsn4fun@gmail.com>
+Date:   Sun Aug 10 22:25:35 2025 +0300
+
+    feat: move App.js to Dashboard.js
+
+[33mcommit c48d6ef4afa729c03da7c1ca5c59711f587f4b73[m
+Author: Arseny <arsn4fun@gmail.com>
+Date:   Sun Aug 10 22:21:43 2025 +0300
+
+    feat: add SessionSelector page to fe
+
+[33mcommit 9a20a4ccbeefda6d560578240c525fe42ffac74d[m
+Author: Arseny <arsn4fun@gmail.com>
+Date:   Sun Aug 10 11:56:43 2025 +0300
+
+    feat: add api to check acailavle session
+
+[33mcommit 982e147222d20f1e40a0b49c83e6ca9d24f7024f[m
+Author: Arseny <arsn4fun@gmail.com>
+Date:   Sun Aug 10 00:07:30 2025 +0300
+
+    feat: are made multisession app architecture
+
+[33mcommit 1a11c96e5c13d66f846bc9abfc2bd1ac448aee4f[m
+Author: Arseny <arsn4fun@gmail.com>
+Date:   Sat Aug 9 23:34:18 2025 +0300
+
+    feat: make api multi session
+
+[33mcommit c503c99aba3ae1e26721b48ce178711dac99ef32[m
+Author: Arseny <arsn4fun@gmail.com>
+Date:   Sat Aug 9 22:40:04 2025 +0300
+
+    refactor: split main.py into many files
+
+[33mcommit 00391ff4daa299bd963b9cc2ee80063d18ad2644[m
+Author: Arseny <arsn4fun@gmail.com>
+Date:   Sat Aug 9 15:41:52 2025 +0300
+
+    feat: sync send_to_opc with new ControLogic
+
+[33mcommit 04280900083541a146e326bac185958893a55a18[m
+Author: Arseny <arsn4fun@gmail.com>
+Date:   Sat Aug 9 15:39:30 2025 +0300
+
+    feat: make send to opc and class ControlLogic multisessions
+
+[33mcommit a482ea1353d0fe977b0e401999b2e58895f9d6c3[m
+Author: Arseny <arsn4fun@gmail.com>
+Date:   Sat Aug 9 13:56:33 2025 +0300
+
+    feat: make update_loop multi session
+
+[33mcommit 687c0d11c7b2ca3e3188f28cd2bd01ddd6eb647e[m
+Author: Arseny <arsn4fun@gmail.com>
+Date:   Sat Aug 9 13:52:34 2025 +0300
+
+    feat: add session/load api
+
+[33mcommit 0aa674be01b108c3d2d35a3e5a69a4c7ff953bc6[m
+Author: Arseny <arsn4fun@gmail.com>
+Date:   Thu Aug 7 03:45:28 2025 +0300
+
+    fix: fix pause/resume from frontend to assemly
+
+[33mcommit 6d206b8b22e834563cfa14e13a95c80bbafd94b8[m
+Author: Arseny <arsn4fun@gmail.com>
+Date:   Tue Aug 5 07:36:32 2025 +0300
+
+    fix: fix mapping BKNS.py with backend problem
+
+[33mcommit e9752d2d20f7b8e87586009c9c5d91e7f16bca1a[m
+Author: Arseny <arsn4fun@gmail.com>
+Date:   Mon Aug 4 22:45:11 2025 +0300
+
+    fix override, but have mapping problem
+
+[33mcommit 3a632a0c57596c35af4ce4c9cb4c8922904a4b90[m
+Author: Arseny <arsn4fun@gmail.com>
+Date:   Mon Aug 4 11:01:14 2025 +0300
+
+    fix change mode manual/model
+
+[33mcommit 1df72667b7a2cd2d3552fddc3e1c0be681bede3a[m
+Author: Arseny <arsn4fun@gmail.com>
+Date:   Sun Aug 3 19:17:46 2025 +0300
+
+    fix architecture
+
+[33mcommit feaad79c61ab0e7c1db7e86f07a09cc5951b2cad[m
+Author: Arseny <arsn4fun@gmail.com>
+Date:   Fri Aug 1 18:24:18 2025 +0300
+
+    add backend feedback & add server callback
+
+[33mcommit 2e3c2f68a6137e544e0645d80aebe0c0e937f217[m
+Author: Arseny <arsn4fun@gmail.com>
+Date:   Fri Aug 1 15:42:47 2025 +0300
+
+    add Docker
+
+[33mcommit 37f3b8453476857f9f6a49c7be4b99b7fe83c6da[m[33m ([m[1;32mmaster[m[33m)[m
+Author: Arseny <arsn4fun@gmail.com>
+Date:   Thu Jul 24 21:08:42 2025 +0300
+
+    nothing commit for test
+
+[33mcommit efb61ac9069d578b450fdb3f34983359fccb84c2[m
+Author: Arseny <arsn4fun@gmail.com>
+Date:   Thu Jul 24 20:56:58 2025 +0300
+
+    update workflow
+
+[33mcommit c6e799c0dbef67c1c9c055cba33a5eaaf00af2d3[m
+Author: Arseny <arsn4fun@gmail.com>
+Date:   Thu Jul 24 20:47:43 2025 +0300
+
+    remove comment in workflow
+
+[33mcommit 7a9bdef03ad3be1296aed93b666b9bab297e70f2[m
+Author: Arseny <arsn4fun@gmail.com>
+Date:   Thu Jul 24 20:29:27 2025 +0300
+
+    fix deploying workflow
+
+[33mcommit e1555325ee9a7a7d4be4c5d787ce028afa144b8e[m
+Author: Arseny <arsn4fun@gmail.com>
+Date:   Thu Jul 24 20:28:13 2025 +0300
+
+    add deploying workflow
+
+[33mcommit 743df2ed195c22a3aacdf1047ceac3f46000c27b[m
+Author: Arseny <arsn4fun@gmail.com>
+Date:   Thu Jul 24 18:58:43 2025 +0300
+
+    fix App.test.js
+
+[33mcommit c6128276da5210ed1062a86c04f5dc7eb19f8dde[m
+Author: Arseny <arsn4fun@gmail.com>
+Date:   Thu Jul 24 18:52:43 2025 +0300
+
+    update App.test.js
+
+[33mcommit 79d68ca0546780cadd61960a84affb19c8a61636[m
+Author: Arseny <arsn4fun@gmail.com>
+Date:   Thu Jul 24 18:45:10 2025 +0300
+
+    add jest config to package.json
+
+[33mcommit 9ea4a09c0cb5d53f60cc771a9749f1f19c1e68f5[m
+Author: Arseny <arsn4fun@gmail.com>
+Date:   Thu Jul 24 17:06:22 2025 +0300
+
+    add working directory to frontend second time
+
+[33mcommit fa24ea9fe8bc913b5d90be20814130fd58df92d0[m
+Author: Arseny <arsn4fun@gmail.com>
+Date:   Thu Jul 24 17:04:30 2025 +0300
+
+    add working directory to fronetnd test
+
+[33mcommit 8afb3238804bb0d664b4876d27cd432ca5a2cac4[m
+Author: Arseny <arsn4fun@gmail.com>
+Date:   Thu Jul 24 16:42:23 2025 +0300
+
+    add testing workflow
+
+[33mcommit a2e76a4a6251c719585510022be954ea63d5f44d[m
+Author: Arseniy <122121553+Kol4edan@users.noreply.github.com>
+Date:   Wed Jul 23 12:32:14 2025 +0300
+
+    Create demo.yml
+
+[33mcommit 12313aa1b0c9a64f4afcab37dd9fc46403306d42[m
+Author: Arseny <arsn4fun@gmail.com>
+Date:   Tue Jul 22 18:17:05 2025 +0300
+
+    init

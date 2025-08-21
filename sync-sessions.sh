@@ -6,7 +6,7 @@
 set -e
 
 # Параметры по умолчанию
-DEFAULT_SSH_KEY="/media/ars/Data/Documents/my_private_key.pem"
+DEFAULT_SSH_KEY="/home/ars/my_private_key.pem"
 DEFAULT_REMOTE_DIR="/home/ubuntu/bkns-dashboard"
 LOCAL_SESSIONS_DIR="backend/sessions"
 

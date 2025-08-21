@@ -1,0 +1,3 @@
+#deploy
+wait-for-opc.sh
+sync-sessions.sh
