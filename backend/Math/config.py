@@ -420,79 +420,62 @@ class BKNS:
     
     
     def get_status(self) -> Dict:
-        status = {
-            'pumps': {},  # Словарь для данных по насосам
-            'main_inlet': {  # Данные по входной трубе
-                'pressure': self.pipes['main_inlet'].p_out,
-                'temperature': self.pipes['main_inlet'].T
-            },
-            'main_outlet': {  # Данные по выходной трубе
-                'pressure': self.pipes['main_outlet'].p_out,
-                'temperature': self.pipes['main_outlet'].T
-            },
-            'valve_sensors': {},
-            'pipe_sensors':{},
-            'oil_sensors':{},
-            'pump_sensors':{},
-            'tank_sensors':{}
-        }
+        status = {}
         
         # Собираем данные по каждому насосу
         for pump_id, pump in enumerate(self.pumps):
-            oil_system = self.oil_systems[pump_id]
-            in_valve = self.valves[f'in_{pump_id}']
-            out_valve = self.valves[f'out_{pump_id}']
-            
-            # Формируем словарь с данными насоса
-            status['pumps'][pump.name] = {
+            status[f'pumps_{pump_id}']= {
                 # Основные параметры работы
-                'pump_id': pump_id,
-                'start': pump.na_start,
-                'stop': pump.na_stop,
-                'on': pump.na_on,
-                'off': pump.na_off,
-                'motor_i': pump.current_motor_i,
+                'na_start': pump.na_start,
+                'na_stop': pump.na_stop,
+                'na_on': pump.na_on,
+                'na_off': pump.na_off,
+                'motor_current': pump.current_motor_i,
+                
+                # Параметры потока
+                'flow_rate': pump.NA_AI_Qmom_n,
                 
                 # Давления
                 'pressure_in': self.pipes[f'in_{pump_id}'].p_out,
                 'pressure_out': pump.p_out,
                 
                 # Температуры
-                'bearing_work_temp': pump.NA_AI_T_1_n,  # T1 - рабочий подшипник
-                'bearing_field_temp': pump.NA_AI_T_2_n,  # T2 - полевой подшипник
-                'motor_bearing_work_temp': pump.NA_AI_T_3_n,  # T3 - подшипник двигателя (рабочий)
-                'motor_bearing_field_temp': pump.NA_AI_T_4_n,  # T4 - подшипник двигателя (полевой)
-                'hydro_support_temp': pump.NA_AI_T_5_n,  #  для гидроопоры
+                'temp_bearing_1': pump.NA_AI_T_1_n,  # T1 - рабочий подшипник
+                'temp_bearing_2': pump.NA_AI_T_2_n,  # T2 - полевой подшипник
+                'motor_motor_1': pump.NA_AI_T_3_n,  # T3 - подшипник двигателя (рабочий)
+                'temp_motor_2': pump.NA_AI_T_4_n,  # T4 - подшипник двигателя (полевой)
+                'temp_water': pump.NA_AI_T_5_n,  #  для гидроопоры
                 
                 # Состояние механических частей
-                'coupling_cover_open': True,  # Его нет!!!
-                
+                'cover_open': True,  # Его нет!!!
+            }
+            
+            for id, oil_system in enumerate(self.oil_systems):
+                status[f"oil_system_{id}"] = {
                 # Параметры маслосистемы
-                'oil_system_running': oil_system.running,
-                'oil_pressure_ok': oil_system.pressure_ok,
+                'oil_sys_running': oil_system.running,
+                'oil_sys_pressure_ok': oil_system.pressure_ok,
                 'oil_pressure': oil_system.pressure,
-                'oil_temperature': oil_system.temperature,
-                'oil_pump_start_cmd': self.oil_pump_commands[pump_id]['start'],
-                'oil_pump_stop_cmd': self.oil_pump_commands[pump_id]['stop'],
-                # Входная задвижка
-                'in_valve_open': in_valve.state == "open",
-                'in_valve_closed': in_valve.state == "closed",
-                'in_valve_open_cmd': in_valve.target_position == 100.0,
-                'in_valve_close_cmd': in_valve.target_position == 0.0,
+                'temperature': oil_system.temperature,
+                'oil_pump_start': self.oil_pump_commands[pump_id]['start'],
+                'oil_pump_stop': self.oil_pump_commands[pump_id]['stop'],
+            }
                 
-                # Выходная задвижка
-                'out_valve_open': out_valve.state == "open",
-                'out_valve_closed': out_valve.state == "closed",
-                'out_valve_open_cmd': out_valve.target_position == 100.0,
-                'out_valve_close_cmd': out_valve.target_position == 0.0,
-
-                # Параметры потока
-                'flow_rate': pump.NA_AI_Qmom_n,
+            for valve_key, valve in self.valves.items():
+                if valve_key.startwith("out_"):
+                    idx = valve_key[-1]
+                    status[f"valve_out_{idx}"]={
+                        
+                        'valve_open': out_valve.state == "open",
+                        'valve_closed': out_valve.state == "closed",
+                        'valve_open_cmd': out_valve.target_position == 100.0,
+                        'valve_close_cmd': out_valve.target_position == 0.0,
+                    }
 
                 #Текущий режим работы насоса
-                'operation_mode': pump.get_operation_mode_name()
-            }
-
+                #'operation_mode': pump.get_operation_mode_name()
+            
+            
 
                 #Значения с датчиков
         for key, values in self.valve_sensor_values.items():
@@ -646,26 +629,14 @@ import sys
 
 #log_file = open("Пример.log", "w", encoding="utf-8")
 #sys.stdout = log_file
-if __name__ == "__main__":
 
-    # Инициализация системы БКНС с параметрами по умолчанию:
-    bkns = BKNS()
-    
-    # Открываем все задвижки насосов NA4 и NA2
-    bkns.control_valve('in_0', True)
-    bkns.control_valve('out_0', True)
-    bkns.control_valve('in_1', True)
-    bkns.control_valve('out_1', True)
+MODEL = BKNS()
+
+MODEL.control_valve('in_0', True)
+MODEL.control_valve('out_0', True)
+MODEL.control_valve('in_1', True)
+MODEL.control_valve('out_1', True)
 
     # Запускаем маслонасосы для обоих насосов
-    bkns.control_oil_pump(0, True)
-    bkns.control_oil_pump(1, True)
-
-    print("=== Начало симуляции БКНС ===")
-    
-    bkns.update_system()
-    
-    print(bkns.get_status())
-
-        
-#log_file.close()
+MODEL.control_oil_pump(0, True)
+MODEL.control_oil_pump(1, True)
