@@ -1,3 +1,8 @@
 #deploy
 wait-for-opc.sh
 sync-sessions.sh
+
+
+#service file
+__pycache__/
+*.pyc

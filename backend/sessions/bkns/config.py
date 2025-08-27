@@ -176,9 +176,9 @@ class BKNS:
                 'flow_current_mA': 0.0
             }
 
-        # Таймер для обновления состояния
-        self.last_update_time = time.time()
-        self.update_system()
+        # # Таймер для обновления состояния
+        # self.last_update_time = time.time()
+        # self.update_system()
 
     def update_system(self):
         """
@@ -419,7 +419,6 @@ class BKNS:
         valve.control(command)
     
     
-    
     def get_status(self) -> Dict:
         """
         Возвращает состояние системы в структуре, ожидаемой OPC и flatten_status_for_opc().
@@ -567,3 +566,12 @@ import sys
 #sys.stdout = log_file
 
 MODEL = BKNS()
+
+MODEL.control_valve('in_0', True)
+MODEL.control_valve('out_0', True)
+MODEL.control_valve('in_1', True)
+MODEL.control_valve('out_1', True)
+
+    # Запускаем маслонасосы для обоих насосов
+MODEL.control_oil_pump(0, True)
+MODEL.control_oil_pump(1, True)
