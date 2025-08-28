@@ -12,6 +12,9 @@ function Dashboard() {
   const [simulationMode, setSimulationMode] = useState(null);
   const [error, setError] = useState(null);
 
+  const [inletPressure, setInletPressure] = useState(115.2);
+  const [outletPressure, setOutletPressure] = useState(115.2);
+
   // Оборачиваем fetchData в useCallback, чтобы функция не создавалась заново при каждом рендере.
   // Это важно для стабильной работы useEffect.
   const fetchData = useCallback(async () => {
@@ -29,7 +32,6 @@ function Dashboard() {
       const statusResult = results[0];
       const modesResult = results[1];
       const simModeResult = results[2];
-
       // Главная проверка: если запрос статуса модели все еще возвращает 404,
       // значит сессия еще не готова.
       if (statusResult.status === 'rejected' && statusResult.reason?.response?.status === 404) {
@@ -48,15 +50,27 @@ function Dashboard() {
       // --- Если мы здесь, значит статус модели успешно получен ---
       setError(null); // Сбрасываем все предыдущие ошибки и сообщения о загрузке.
 
+
+
+
       // 1. Обрабатываем статус модели (мы знаем, что он успешен)
       const flatData = statusResult.value.data || {}; // Добавлена проверка на components
       const grouped = { pumps: {}, valves: {}, oil_systems: {} };
       for (const [key, value] of Object.entries(flatData)) {
-        if (key.startsWith("pump_")) grouped.pumps[key] = value;
+        if (key.startsWith("pump_"))grouped.pumps[key] = value; 
         else if (key.startsWith("valve_out_")) grouped.valves[key] = value;
         else if (key.startsWith("oil_system_")) grouped.oil_systems[key] = value;
       }
       setModelStatus(grouped);
+
+      let totalInPressure = 0;
+      let totalOutPressure = 0;
+      for (const [pump,param] of Object.entries(grouped.pumps)){
+        if (param.pressure_in) totalInPressure += param.pressure_in;
+        if (param.pressure_out) totalOutPressure += param.pressure_out;
+      }
+      setInletPressure(totalInPressure);
+      setOutletPressure(totalOutPressure);
 
       // 2. Обрабатываем режимы управления (если запрос был успешен)
       if (modesResult.status === 'fulfilled') {
@@ -97,7 +111,11 @@ function Dashboard() {
 
       {error && <div className="error-message">{error}</div>}
 
-      <SystemStatus status={modelStatus} />
+      <SystemStatus 
+        status={modelStatus}
+        inletPressure={inletPressure}
+        outletPressure={outletPressure}
+      />
 
       <div className="component-section">
         <h2 >Насосы</h2>

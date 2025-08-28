@@ -10,7 +10,7 @@ from state import (
     opc_adapters, SERVER_URL, SESSIONS_DIR
 )
 from logic import control_logic
-from opc_utils import update_opc_from_model_state
+from opc_utils import send_to_server
 from opc_adapter import OPCAdapter
 from background_tasks import update_loop
 
@@ -66,7 +66,7 @@ async def sync(session_id: str, background_tasks: BackgroundTasks):
     adapter = opc_adapters.get(session_id)
     if not adapter or not adapter.is_running:
         return {"status": "ERROR", "message": "OPC не подключен"}
-    background_tasks.add_task(update_opc_from_model_state, session_id, force_send_all=True)
+    background_tasks.add_task(send_to_server, session_id, force_send_all=True)
     return {"status": "ACCEPTED"}
 
 
@@ -142,7 +142,7 @@ async def load_session(data: LoadSessionRequest):
         control_logic.control_modes[session_id] = {}
         control_logic.manual_overrides[session_id] = {}
 
-        opc_adapter = OPCAdapter(SERVER_URL, control_logic, sessions, update_opc_from_model_state, session_id)
+        opc_adapter = OPCAdapter(SERVER_URL, control_logic, sessions, send_to_server, session_id)
         opc_adapters[session_id] = opc_adapter
         asyncio.create_task(opc_adapter.run())
 

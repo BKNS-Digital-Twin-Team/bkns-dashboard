@@ -1,6 +1,6 @@
 import asyncio
 from state import sessions, session_states, previous_states
-from opc_utils import update_opc_from_model_state
+from opc_utils import send_to_server
 
 async def update_loop(session_id: str):
 
@@ -18,9 +18,9 @@ async def update_loop(session_id: str):
                 
                 current_state = model.get_status()
                 
-                await update_opc_from_model_state(session_id)
+                await send_to_server(session_id)
                 
-                previous_states[session_id] = current_state
+                #previous_states[session_id] = current_state
 
             await asyncio.sleep(1)
         except asyncio.CancelledError:

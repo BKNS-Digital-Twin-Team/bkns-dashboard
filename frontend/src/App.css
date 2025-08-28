@@ -156,7 +156,7 @@ button:disabled {
   margin-bottom: 0.25rem;
 }
 
-.line, .param {
+.param {
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -164,7 +164,13 @@ button:disabled {
     width: 200px;
     font-size: 16px;
     font-style: normal;
-    margin-bottom: 1px;
+}
+.line {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    margin: 4px;
 }
 
 .line > *:not(:last-child)::after,
@@ -176,7 +182,6 @@ button:disabled {
 
 .param-override-input {
     width: 50px;
-    padding: 5px;
     font-size: 16px;
     border: 0px;
     border-radius: 4px;
