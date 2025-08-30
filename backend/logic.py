@@ -30,26 +30,13 @@ class ControlLogic:
         self.control_modes[session_id][component] = source
         return {"status": "OK"}
 
-    def process_command(self, session_id, source, component, param, value):
-        self.control_modes.setdefault(session_id, {})
-        self.control_modes[session_id].setdefault(component, "MODEL")
-        
-        adapter = opc_adapters.get(session_id)
-        if adapter is None or not adapter.is_running:
-            print(f"[SKIP OPC] Нет активного OPC для сессии {session_id}")
-            return {"status": "NO_OPC"}
-        
-        # Если есть оверрайд — подменяем значение
-        override_value = self.manual_overrides.get(session_id, {}).get((component, param))
-        if override_value is not None:
-            print(f"[OVERRIDE->OPC] заменяем {component}.{param} на {override_value}")
-            value = override_value
-            
-        # Отправляем в OPC
-        asyncio.create_task(adapter.send_to_opc(component, param, value))
+    def process_command(self, session_id, component, param, value):
+        # self.control_modes.setdefault(session_id, {})
+        # self.control_modes[session_id].setdefault(component, "MODEL")
         
         # Выполняем действия в модели
         model = sessions.get(session_id)
+        
         if model:
             type_, id_ = component.rsplit("_", 1)
             id_ = int(id_)
@@ -63,5 +50,20 @@ class ControlLogic:
                 model.control_oil_pump(id_, param == "oil_pump_start")
 
         return {"status": "OK"}
+    
+    def send_command_to_opc(self, session_id, component, param, value):
+        adapter = opc_adapters.get(session_id)
+        if adapter is None or not adapter.is_running:
+            print(f"[SKIP OPC] Нет активного OPC для сессии {session_id}")
+            return {"status": "NO_OPC"}
+        
+        # Если есть оверрайд — подменяем значение
+        override_value = self.manual_overrides.get(session_id, {}).get((component, param))
+        if override_value is not None:
+            print(f"[OVERRIDE->OPC] заменяем {component}.{param} на {override_value}")
+            value = override_value
+            
+        # Отправляем в OPC
+        asyncio.create_task(adapter.send_to_opc(component, param, value))
 
 control_logic = ControlLogic()
