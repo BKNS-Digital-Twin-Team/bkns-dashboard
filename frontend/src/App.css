@@ -88,6 +88,14 @@ body {
   width: 60px;
 }
 
+.component-card .overrided-row {
+  background-color: red;
+}
+
+.component-card .accepted-overrided-row {
+  background-color: #1abc9c;
+}
+
 button {
   background-color: #007bff;
   color: white;

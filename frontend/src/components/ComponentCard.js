@@ -39,6 +39,7 @@ const PARAM_NAMES = {
 const ComponentCard = ({ name, data, sessionId, onUpdate }) => {
   // Локальное состояние для хранения значений из полей ввода
   const [overrides, setOverrides] = useState({});
+  const [appliedOverrides, setAppliedOverrides] = useState({});
 
   // Обработчик для обновления локального состояния при вводе
   const handleOverrideChange = (param, value) => {
@@ -46,11 +47,20 @@ const ComponentCard = ({ name, data, sessionId, onUpdate }) => {
       ...prev,
       [param]: value,
     }));
+
+    // Сбрасываем статус примененного значения при изменении
+    setAppliedOverrides(prev => ({
+      ...prev,
+      [param]: false,
+    }));
+
   };
 
   // Функция для отправки данных на сервер по нажатию кнопки
   const applyOverrides = async () => {
     console.log(`Применение оверрайдов для ${name}:`, overrides);
+
+    const successfullyApplied = {};
 
     for (const [param, value] of Object.entries(overrides)) {
       const parsedValue = parseFloat(value);
@@ -59,16 +69,29 @@ const ComponentCard = ({ name, data, sessionId, onUpdate }) => {
           // Вызываем ИСПРАВЛЕННУЮ функцию с правильными аргументами
           await api.sendManualOverride(sessionId, name, param, parsedValue);
           console.log(`[OVERRIDE] Успешно: ${name}.${param} = ${parsedValue}`);
+          successfullyApplied[param] = true;
         } catch (error) {
           console.error(`Ошибка отправки оверрайда для ${name}.${param}:`, error);
         }
       }
     }
+
+    setAppliedOverrides(prev => ({
+        ...prev,
+        ...successfullyApplied
+    }));
+
     // Просим родителя обновить все данные, чтобы увидеть результат
     if (onUpdate) {
       onUpdate();
     }
   };
+
+  // Функция для проверки, было ли значение применено
+  const isValueApplied = (param) => {
+    return appliedOverrides[param] === true;
+  };
+
   
   return (
     <div className="component-card">
@@ -91,11 +114,20 @@ const ComponentCard = ({ name, data, sessionId, onUpdate }) => {
                 if (typeof value !== 'number' && typeof value !== 'boolean') return null;
 
                 const isOverridable = typeof value === 'number';
-                
-                
+              
+                if (overrides[key] !== undefined && overrides[key] !== '') {
+                  // Для данного ключа есть переопределение
+                  console.log(`Для ${key} установлено значение: ${overrides[key]}`);
+                }
+
+                const isOverride = (overrides[key] !== undefined && overrides[key] !== '')
+                const isApplied = isValueApplied(key);
 
                 return (
-                  <tr key={key}>
+                  <tr key={key} className={`table-row 
+                    ${isOverride ? 'overrided-row' : ''} 
+                    ${isApplied ? 'accepted-overrided-row' : ''}`
+                  } >
                       <td className="param-name">{key}:</td>
                       <td>{PARAM_NAMES[key]?.name}</td>
                       <td className={`param-value`}>
