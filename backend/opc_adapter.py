@@ -184,6 +184,7 @@ class OPCAdapter:
         node_id = None
         for nid, info in self.OPC_NODE_MAPPING.items():
             if info["component_id"] == component_id and info["param"] == param:
+                variant_type = ua.VariantType.Boolean if info["mode"] in ["control", "status"] else ua.VariantType.Double
                 node_id = nid
                 break
 
@@ -192,13 +193,6 @@ class OPCAdapter:
             return
 
         try:
-            variant_type = ua.VariantType.Boolean
-            if isinstance(value, float):
-                variant_type = ua.VariantType.Double
-            elif isinstance(value, int):
-                variant_type = ua.VariantType.Int64
-            elif isinstance(value, str):
-                variant_type = ua.VariantType.String
 
             # 2. Создаем переменную `variant` нужного OPC UA типа
             variant = ua.Variant(value, variant_type)

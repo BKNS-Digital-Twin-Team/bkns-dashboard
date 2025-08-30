@@ -14,17 +14,17 @@ async def send_to_server(session_id, force_send_all=False):
     
     now = time.time()
     
-    # if force_send_all:
-    #     session_last_full_sync[session_id] = now
-    #     print("[SYNC] Запуск принудительной полной синхронизации...")   
-    # elif not force_send_all:
-    #     last_sync_time = session_last_full_sync.get(session_id, 0)
-    #     if now - last_sync_time >= FULL_SYNC_INTERVAL:
-    #         force_send_all = True
-    #         print(f"[SYNC] Автоматическая полная синхронизация для {session_id}...")
+    if force_send_all:
+        session_last_full_sync[session_id] = now
+        print("[SYNC] Запуск принудительной полной синхронизации...")   
+    elif not force_send_all:
+        last_sync_time = session_last_full_sync.get(session_id, 0)
+        if now - last_sync_time >= FULL_SYNC_INTERVAL:
+            force_send_all = True
+            print(f"[SYNC] Автоматическая полная синхронизация для {session_id}...")
     
-    # for (component, param), override_value in control_logic.manual_overrides.get(session_id, {}).items():
-    #     control_logic.process_command(session_id, "MODEL", component, param, override_value)
+    for (component, param), override_value in control_logic.manual_overrides.get(session_id, {}).items():
+        control_logic.send_command_to_opc(session_id, component, param, override_value)
     
     for component, params in current_state.items():
         for param, value in params.items():
