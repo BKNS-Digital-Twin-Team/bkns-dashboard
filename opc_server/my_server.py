@@ -86,14 +86,14 @@ async def main():
     control_obj = await objects.add_object(idx, "PumpControlSystem")
 
     # === Создание переменных ===
-    # === Создание переменных ===
     nodeid_map = {}
     for nodeid_str, info in OPC_NODE_MAPPING.items():
         name = f"{info['component_id']}_{info['param']}"
         initial_value = False if info['mode'] in ["control", "status"] else 0.0
-
+        data_type = ua.VariantType.Boolean if info['mode'] in ["control", "status"] else ua.VariantType.Float
+        
         nodeid = ua.NodeId.from_string(nodeid_str)
-        var = await control_obj.add_variable(nodeid, name, initial_value)
+        var = await control_obj.add_variable(nodeid, name, initial_value, datatype=data_type)
         await var.set_writable()
 
         nodeid_map[nodeid_str] = var

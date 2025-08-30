@@ -20,7 +20,7 @@ async def update_loop(session_id: str):
                 
                 await send_to_server(session_id)
                 
-                #previous_states[session_id] = current_state
+                previous_states[session_id] = current_state
 
             await asyncio.sleep(1)
         except asyncio.CancelledError:
