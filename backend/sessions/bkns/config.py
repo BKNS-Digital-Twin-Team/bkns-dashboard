@@ -426,8 +426,8 @@ class BKNS:
         for pump_id, pump in enumerate(self.pumps):
             status[f'pump_{pump_id}']= {
                 # Основные параметры работы
-                'na_start': pump.na_start,
-                'na_stop': pump.na_stop,
+                # 'na_start': pump.na_start,
+                # 'na_stop': pump.na_stop,
                 'na_on': pump.na_on,
                 'na_off': pump.na_off,
                 'motor_current': pump.current_motor_i,
@@ -456,9 +456,9 @@ class BKNS:
                 'oil_sys_running': oil_system.running,
                 'oil_sys_pressure_ok': oil_system.pressure_ok,
                 'oil_pressure': oil_system.pressure,
-                'temperature': oil_system.temperature,
-                'oil_pump_start': self.oil_pump_commands[pump_id]['start'],
-                'oil_pump_stop': self.oil_pump_commands[pump_id]['stop'],
+                'temperature': oil_system.temperature
+            #     'oil_pump_start': self.oil_pump_commands[pump_id]['start'],
+            #     'oil_pump_stop': self.oil_pump_commands[pump_id]['stop'],
             }
                 
             for valve_key, valve in self.valves.items():
@@ -466,9 +466,9 @@ class BKNS:
                     idx = valve_key[-1]
                     status[f"valve_out_{idx}"]={  
                         'valve_open': valve.state == "open",
-                        'valve_closed': valve.state == "closed",
-                        'valve_open_cmd': valve.target_position == 100.0,
-                        'valve_close_cmd': valve.target_position == 0.0,
+                        'valve_closed': valve.state == "closed"
+                        # 'valve_open_cmd': valve.target_position == 100.0,
+                        # 'valve_close_cmd': valve.target_position == 0.0,
                     }
 
                 #Текущий режим работы насоса
