@@ -95,7 +95,7 @@ const ComponentCard = ({ name, data, sessionId, onUpdate }) => {
                       <td className="param-name">{key}:</td>
                       <td>{PARAM_NAMES[key]} </td>
                       <td className={`param-value`}>
-                        {typeof value === 'boolean' ? (value ? 'Да' : 'Нет') : value.toFixed(3)}
+                        {typeof value === 'boolean' ? (value ? 'Да' : 'Нет') : value.toFixed(1)}
                       </td>
                       {isOverridable && (
                         <td>
