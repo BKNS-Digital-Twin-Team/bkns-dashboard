@@ -442,7 +442,7 @@ class BKNS:
                 # Температуры
                 'temp_bearing_1': pump.NA_AI_T_1_n,  # T1 - рабочий подшипник
                 'temp_bearing_2': pump.NA_AI_T_2_n,  # T2 - полевой подшипник
-                'motor_motor_1': pump.NA_AI_T_3_n,  # T3 - подшипник двигателя (рабочий)
+                'temp_motor_1': pump.NA_AI_T_3_n,  # T3 - подшипник двигателя (рабочий)
                 'temp_motor_2': pump.NA_AI_T_4_n,  # T4 - подшипник двигателя (полевой)
                 'temp_water': pump.NA_AI_T_5_n,  #  для гидроопоры
                 
