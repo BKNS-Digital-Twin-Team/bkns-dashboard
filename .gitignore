@@ -6,3 +6,5 @@ sync-sessions.sh
 #service file
 __pycache__/
 *.pyc
+
+sessions/
