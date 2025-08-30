@@ -6,7 +6,7 @@
 set -e  # Прерывать выполнение при ошибках
 
 # Параметры по умолчанию
-DEFAULT_SSH_KEY="$HOME/.ssh/id_rsa"
+DEFAULT_SSH_KEY="/home/ars/my_private_key.pem"
 DEFAULT_REMOTE_DIR="~/bkns-digital-twin"
 
 # Проверяем обязательный параметр - хост
