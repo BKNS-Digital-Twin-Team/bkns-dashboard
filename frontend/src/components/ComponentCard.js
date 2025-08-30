@@ -7,29 +7,32 @@ import * as api from '../api/twinApi';
 // "Красивые" имена для параметров на русском языке
 const PARAM_NAMES = {
   // Параметры насоса
-  'na_on': 'Насос включен',
-  'na_off': 'Насос выключен',
-  'motor_current': 'Ток двигателя, А',
-  'flow_rate': 'Расход, м³/ч',
-  'pressure_in': 'Давление на входе, бар',
-  'pressure_out': 'Давление на выходе, бар',
-  'temp_bearing_1': 'Температура подшипника 1, °C',
-  'temp_bearing_2': 'Температура подшипника 2, °C',
-  'temp_motor_1': 'Температура двигателя 1, °C',
-  'temp_motor_2': 'Температура двигателя 2, °C',
-  'temp_water': 'Температура воды, °C',
-  'cover_open': 'Крышка открыта',
+  'na_on': { name: 'Насос включен', unit: '' },
+  'na_off': { name: 'Насос выключен', unit: '' },
+  'motor_current': { name: 'Ток двигателя', unit: 'А' },
+  'flow_rate': { name: 'Расход', unit: 'м³/ч' },
+  'pressure_in': { name: 'Давление на входе', unit: 'бар' },
+  'pressure_out': { name: 'Давление на выходе', unit: 'бар' },
+  'temp_bearing_1': { name: 'Температура подшипника 1', unit: '°C' },
+  'temp_bearing_2': { name: 'Температура подшипника 2', unit: '°C' },
+  'temp_motor_1': { name: 'Температура двигателя 1', unit: '°C' },
+  'temp_motor_2': { name: 'Температура двигателя 2', unit: '°C' },
+  'temp_water': { name: 'Температура воды', unit: '°C' },
+  'cover_open': { name: 'Крышка открыта', unit: '' },
   
   // Параметры задвижек
-  'valve_open': 'Задвижка открыта',
-  'valve_closed': 'Задвижка закрыта',
+  'valve_open': { name: 'Задвижка открыта', unit: '' },
+  'valve_closed': { name: 'Задвижка закрыта', unit: '' },
   
   // Параметры маслосистемы
-  'oil_sys_running': 'Маслосистема работает',
-  'oil_sys_pressure_ok': 'Давление в маслосистеме в норме',
-  'oil_pressure': 'Давление масла, бар',
-  'temperature': 'Температура, °C' // Общая температура для маслосистемы
+  'oil_sys_running': { name: 'Маслосистема работает', unit: '' },
+  'oil_sys_pressure_ok': { name: 'Давление в норме', unit: '' },
+  'oil_pressure': { name: 'Давление масла', unit: 'бар' },
+  'temperature': { name: 'Температура', unit: '°C' }
 };
+
+
+
 
 // Пропсы `type`, `mode`, `onModeToggle` не используются в новой версии,
 // но я оставлю их, если они нужны для другой логики.
@@ -78,6 +81,7 @@ const ComponentCard = ({ name, data, sessionId, onUpdate }) => {
               <th>Параметр</th>
               <th>Элиас</th>
               <th>Значение</th>
+              <th>Ед. изм.</th>
               <th>Переопределение</th>
             </tr>
           </thead>
@@ -93,10 +97,11 @@ const ComponentCard = ({ name, data, sessionId, onUpdate }) => {
                 return (
                   <tr key={key}>
                       <td className="param-name">{key}:</td>
-                      <td>{PARAM_NAMES[key]} </td>
+                      <td>{PARAM_NAMES[key]?.name}</td>
                       <td className={`param-value`}>
                         {typeof value === 'boolean' ? (value ? 'Да' : 'Нет') : value.toFixed(1)}
                       </td>
+                      <td>{PARAM_NAMES[key]?.unit}</td>
                       {isOverridable && (
                         <td>
                         <input
