@@ -112,10 +112,10 @@ const ComponentCard = ({ name, data, sessionId, onUpdate }) => {
           <thead>
             <tr>
               <th>Параметр</th>
-              <th>Элиас</th>
-              <th>Значение</th>
-              <th>Ед. изм.</th>
-              <th>Переопределение</th>
+              <th>Название</th>
+              <th>Знач.</th>
+              <th>Ед.изм.</th>
+              <th>Замена</th>
             </tr>
           </thead>
 

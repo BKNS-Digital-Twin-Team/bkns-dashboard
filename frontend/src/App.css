@@ -54,13 +54,25 @@ body {
   background-color: #fff;
   border: 1px solid #ddd;
   border-radius: 8px;
-  padding: 20px;
+  padding: 0px 20px 20px 20px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.05);
   transition: box-shadow 0.3s ease;
   font-size: 18;
 }
 .component-card table th {
   text-align: left;
+}
+
+.component-card input {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border: 0px;
+  font-size: 18;
+  -webkit-appearance: none;
+  -moz-appearance: textfield;
+  appearance: none;
+  background-color: #0057b300;
 }
 
 .component-card:hover {
@@ -76,6 +88,7 @@ body {
   color: #0056b3;
   border-bottom: 2px solid #eee;
   padding-bottom: 10px;
+  font-size: 20px;
 }
 
 .component-data p {
@@ -84,17 +97,76 @@ body {
   justify-content: space-between;
 }
 
-.component-card input {
-  width: 60px;
-}
-
 .component-card .overrided-row {
-  background-color: red;
+  background-color: rgba(254, 177, 54, 0.512);
 }
 
 .component-card .accepted-overrided-row {
-  background-color: #1abc9c;
+  background-color: #23da8582;
 }
+
+.component-card table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed; /* Важно для фиксированной ширины колонок */
+}
+
+.component-card table th:nth-child(1),
+.component-card table td:nth-child(1) { width: 30%; }
+
+.component-card table th:nth-child(2),
+.component-card table td:nth-child(2) { width: 30%; }
+
+.component-card table th:nth-child(3),
+.component-card table td:nth-child(3) { width: 10%; }
+
+.component-card table th:nth-child(4),
+.component-card table td:nth-child(4) { width: 15%; }
+
+.component-card table th:nth-child(5),
+.component-card table td:nth-child(5) { width: 15%; }
+
+.component-card th, td {
+  text-align: left;
+  height: 40px; /* Высота ячеек = высота строки */
+  padding: 20 20px;
+  border-bottom: 1px solid #e2e8f0;
+  vertical-align: middle; /* Выравнивание по центру */
+}
+
+/* Вариант 1: Тонкие линии */
+.component-card table tr{
+    border-bottom: 1px solid #e2e8f0;
+    height: 10px;
+}
+        
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+}
+
+input[type='number'] {
+    -moz-appearance: textfield;
+}
+
+.component-params {
+  margin-bottom: 20px;
+}
+
+
+.component-card table tbody tr:hover {
+  outline: 3px solid #0084ff1b; /* outline не влияет на layout */
+  box-shadow: 0 0 0 3px #0095ff2c; /* эффект свечения */
+  background-color: #f0f6ff7e !important; /* подсветка фона */
+}
+
+
+
+
+
+
+
 
 button {
   background-color: #007bff;
