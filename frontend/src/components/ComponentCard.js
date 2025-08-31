@@ -61,8 +61,18 @@ const ComponentCard = ({ name, data, sessionId, onUpdate }) => {
     console.log(`Применение оверрайдов для ${name}:`, overrides);
 
     const successfullyApplied = {};
+    const overridesToReset = []; 
+
+
 
     for (const [param, value] of Object.entries(overrides)) {
+      
+      if (value === '') {
+        await api.sendManualOverride(sessionId, name, param, -1);
+        overridesToReset.push(param);
+        continue;
+      } 
+      
       const parsedValue = parseFloat(value);
       if (!isNaN(parsedValue)) {
         try {
