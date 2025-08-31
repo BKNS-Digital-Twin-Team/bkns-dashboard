@@ -48,11 +48,6 @@ const ComponentCard = ({ name, data, sessionId, onUpdate }) => {
       [param]: value,
     }));
 
-    // Сбрасываем статус примененного значения при изменении
-    setAppliedOverrides(prev => ({
-      ...prev,
-      [param]: false,
-    }));
 
   };
 
@@ -64,12 +59,17 @@ const ComponentCard = ({ name, data, sessionId, onUpdate }) => {
     const overridesToReset = []; 
 
 
-
     for (const [param, value] of Object.entries(overrides)) {
       
       if (value === '') {
         await api.clearManualOverride(sessionId, name, param);
         overridesToReset.push(param);
+
+        setAppliedOverrides(prev => ({
+          ...prev,
+          [param]: false,
+        }));
+
         continue;
       } 
       
@@ -130,7 +130,7 @@ const ComponentCard = ({ name, data, sessionId, onUpdate }) => {
                   console.log(`Для ${key} установлено значение: ${overrides[key]}`);
                 }
 
-                const isOverride = (overrides[key] !== undefined && overrides[key] !== '')
+                const isOverride = (overrides[key] !== undefined && overrides[key] !== '');
                 const isApplied = isValueApplied(key);
 
                 return (
