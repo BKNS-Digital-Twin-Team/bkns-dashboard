@@ -68,7 +68,7 @@ const ComponentCard = ({ name, data, sessionId, onUpdate }) => {
     for (const [param, value] of Object.entries(overrides)) {
       
       if (value === '') {
-        await api.sendManualOverride(sessionId, name, param, -1);
+        await api.clearManualOverride(sessionId, name, param);
         overridesToReset.push(param);
         continue;
       } 
@@ -77,7 +77,7 @@ const ComponentCard = ({ name, data, sessionId, onUpdate }) => {
       if (!isNaN(parsedValue)) {
         try {
           // Вызываем ИСПРАВЛЕННУЮ функцию с правильными аргументами
-          await api.sendManualOverride(sessionId, name, param, parsedValue);
+          await api.setManualOverride(sessionId, name, param, parsedValue);
           console.log(`[OVERRIDE] Успешно: ${name}.${param} = ${parsedValue}`);
           successfullyApplied[param] = true;
         } catch (error) {
