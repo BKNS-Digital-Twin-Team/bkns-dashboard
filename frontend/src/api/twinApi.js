@@ -68,10 +68,17 @@ export const sendManualCommand = (sessionId, component, param, value) => {
   });
 };
 
-export const sendManualOverride = (sessionId, component, param, value) => {
-  return api.post(`/simulation/${sessionId}/control/overrides`, {
+export const setManualOverride = (sessionId, component, param, value) => {
+  return api.post(`/simulation/${sessionId}/control/overrides/set`, {
     component,
     param,
     value
+  });
+};
+
+export const clearManualOverride = (sessionId, component, param) => {
+  return api.post(`/simulation/${sessionId}/control/overrides/clear`, {
+    component,
+    param,
   });
 };

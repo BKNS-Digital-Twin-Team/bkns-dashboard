@@ -9,7 +9,7 @@ class ControlLogic:
         self.manual_overrides = manual_overrides
         self.control_modes = control_modes
          
-    def set_manual_overrides(self, session_id, component, param, value):
+    def set_manual_override(self, session_id, component, param, value):
         self.manual_overrides.setdefault(session_id, {})
         self.manual_overrides[session_id][(component, param)] = float(value)
     
