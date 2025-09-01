@@ -83,7 +83,7 @@ def set_control_source(session_id: str, cmd: ControlSourceCommand):
 
 
         
-@api_router.post("/simulation/{session_id}/control/overrides")
+@api_router.post("/simulation/{session_id}/control/overrides/set")
 def set_manual_overrides(session_id: str, payload: dict):
     if session_id not in sessions:
         raise HTTPException(status_code=404, detail="Сессия не найдена")
@@ -95,9 +95,26 @@ def set_manual_overrides(session_id: str, payload: dict):
 
     if not all([component, param, value is not None]):
         raise HTTPException(status_code=400, detail="Неверный формат. Требуются 'component', 'param', 'value'.")
+    
 
-    control_logic.set_manual_overrides(session_id, component, param, value)
+    control_logic.set_manual_override(session_id, component, param, value)
     print(f"[OVERRIDE] Для сессии {session_id} установлено: {component}.{param} = {value}")
+    return {"status": "OK"}
+    
+@api_router.post("/simulation/{session_id}/control/overrides/clear")
+def clear_manual_override(session_id: str, payload: dict):
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Сессия не найдена")
+        
+    # Упрощаем и делаем логику более строгой
+    component = payload.get("component")
+    param = payload.get("param")
+
+    if not all([component, param is not None]):
+        raise HTTPException(status_code=400, detail="Неверный формат. Требуются 'component', 'param'")
+    
+    control_logic.clear_manual_override(session_id, component, param)
+    print(f"[OVERRIDE] Для сессии {session_id} сброщено значение параметра: {component}.{param}")
     return {"status": "OK"}
 
 @api_router.get("/simulation/debug/overrides")

@@ -12,8 +12,8 @@ function Dashboard() {
   const [simulationMode, setSimulationMode] = useState(null);
   const [error, setError] = useState(null);
 
-  const [inletPressure, setInletPressure] = useState(115.2);
-  const [outletPressure, setOutletPressure] = useState(115.2);
+  const [inletPressure, setInletPressure] = useState(0);
+  const [outletPressure, setOutletPressure] = useState(0);
 
   // Оборачиваем fetchData в useCallback, чтобы функция не создавалась заново при каждом рендере.
   // Это важно для стабильной работы useEffect.

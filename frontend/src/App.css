@@ -8,8 +8,9 @@ body {
   padding: 20px;
 }
 
+
 .App {
-  max-width: 1200px;
+  max-width: 1300px;
   margin: 0 auto;
 }
 
@@ -45,7 +46,7 @@ body {
 
 .components-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
   gap: 20px;
 }
 
@@ -53,13 +54,33 @@ body {
   background-color: #fff;
   border: 1px solid #ddd;
   border-radius: 8px;
-  padding: 20px;
+  padding: 0px 20px 20px 20px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.05);
   transition: box-shadow 0.3s ease;
+  font-size: 18;
+}
+.component-card table th {
+  text-align: left;
+}
+
+.component-card input {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border: 0px;
+  font-size: 18;
+  -webkit-appearance: none;
+  -moz-appearance: textfield;
+  appearance: none;
+  background-color: #0057b300;
 }
 
 .component-card:hover {
   box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.component-card .component-data {
+  margin: 20px 0;
 }
 
 .component-card h3 {
@@ -67,6 +88,7 @@ body {
   color: #0056b3;
   border-bottom: 2px solid #eee;
   padding-bottom: 10px;
+  font-size: 20px;
 }
 
 .component-data p {
@@ -74,6 +96,77 @@ body {
   display: flex;
   justify-content: space-between;
 }
+
+.component-card .overrided-row {
+  background-color: rgba(254, 177, 54, 0.512);
+}
+
+.component-card .accepted-overrided-row {
+  background-color: #23da8582;
+}
+
+.component-card table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed; /* Важно для фиксированной ширины колонок */
+}
+
+.component-card table th:nth-child(1),
+.component-card table td:nth-child(1) { width: 30%; }
+
+.component-card table th:nth-child(2),
+.component-card table td:nth-child(2) { width: 30%; }
+
+.component-card table th:nth-child(3),
+.component-card table td:nth-child(3) { width: 10%; }
+
+.component-card table th:nth-child(4),
+.component-card table td:nth-child(4) { width: 15%; }
+
+.component-card table th:nth-child(5),
+.component-card table td:nth-child(5) { width: 15%; }
+
+.component-card th, td {
+  text-align: left;
+  height: 40px; /* Высота ячеек = высота строки */
+  padding: 20 20px;
+  border-bottom: 1px solid #e2e8f0;
+  vertical-align: middle; /* Выравнивание по центру */
+}
+
+/* Вариант 1: Тонкие линии */
+.component-card table tr{
+    border-bottom: 1px solid #e2e8f0;
+    height: 10px;
+}
+        
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+}
+
+input[type='number'] {
+    -moz-appearance: textfield;
+}
+
+.component-params {
+  margin-bottom: 20px;
+}
+
+
+.component-card table tbody tr:hover {
+  outline: 3px solid #0084ff1b; /* outline не влияет на layout */
+  box-shadow: 0 0 0 3px #0095ff2c; /* эффект свечения */
+  background-color: #f0f6ff7e !important; /* подсветка фона */
+}
+
+
+
+
+
+
+
 
 button {
   background-color: #007bff;
@@ -140,68 +233,8 @@ button:disabled {
   color: #ffffff;
 }
 
-.param-block {
-  display: flex;
-  flex-direction: column; /* ключевой момент */
-  margin-bottom: 1rem;
-  background: #f9f9f9;
-  padding: 0.5rem;
-  border-radius: 8px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-  width: 100%; /* по желанию */
-}
 
-.param-label {
-  font-weight: 600;
-  margin-bottom: 0.25rem;
-}
 
-.param {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: flex-start;
-    width: 200px;
-    font-size: 16px;
-    font-style: normal;
-}
-.line {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: flex-start;
-    margin: 4px;
-}
-
-.line > *:not(:last-child)::after,
-.param > *:not(:last-child)::after {
-    content: "|"; /* Вертикальная палочка */
-    margin: 0 5px; /* Отступы слева и справа от палочки */
-    color: #ccc; /* Цвет палочки */
-}
-
-.param-override-input {
-    width: 50px;
-    font-size: 16px;
-    border: 0px;
-    border-radius: 4px;
-    -webkit-appearance: none;
-    -moz-appearance: textfield;
-    appearance: none;
-}
-
-input::-webkit-outer-spin-button,
-input::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-}
-
-input[type='number'] {
-    -moz-appearance: textfield;
-}
-
-.component-params {
-  margin-bottom: 20px;
-}
 
 
 
