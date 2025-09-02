@@ -34,8 +34,11 @@ class OilSystem:
     def __init__(self, pump_id: int, temp_limit = 75.0):
         """ модель маслосистемы центробежного насоса (pump_id): идентификатор насоса (0 для NA4, 1 для NA2) """
         self.tank = OilTank() # маслобак
-
+        
         self.pump_id = pump_id
+        
+        self.pump_name = 'NA4' if self.pump_id == 0 else 'NA2' if self.pump_id == 1 else 'UNKNOWN'
+        
         self.temp_limit = temp_limit  # предельная температура масла (°C)
         self.temperature = 40.0  # температура масла (°C)
         self.viscosity = 46.0  # вязкость масла (сСт)
