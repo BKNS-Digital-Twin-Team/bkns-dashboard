@@ -19,7 +19,7 @@ function Dashboard() {
   // Это важно для стабильной работы useEffect.
   const fetchData = useCallback(async () => {
     if (!sessionId) return;
-
+пше
     try {
       // Используем Promise.allSettled для параллельного выполнения всех запросов.
       // Он не прервется, если один из запросов завершится с ошибкой.
@@ -65,9 +65,11 @@ function Dashboard() {
 
       let totalInPressure = 0;
       let totalOutPressure = 0;
-      for (const [pump,param] of Object.entries(grouped.pumps)){
-        if (param.pressure_in) totalInPressure += param.pressure_in;
-        if (param.pressure_out) totalOutPressure += param.pressure_out;
+      for (const params of Object.values(grouped.pumps)) {
+          for (const [key, value] of Object.entries(params)) {
+              if (key.endsWith('pressure_in')) totalInPressure += value;
+              if (key.endsWith('pressure_out')) totalOutPressure += value;
+          }
       }
       setInletPressure(totalInPressure);
       setOutletPressure(totalOutPressure);
