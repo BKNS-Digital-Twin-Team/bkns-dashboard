@@ -148,11 +148,8 @@ class OPCAdapter:
 
                 command_info = self.adapter.OPC_NODE_MAPPING.get(node_id)
                 if command_info:
-                    # Внимание: у process_command нет аргумента 'mode'.
-                    # Предполагаем, что source должен быть 'OPC'.
                     self.adapter.control_logic.process_command(
                         session_id=self.session_id,
-                        source="OPC",
                         component=command_info["component_id"],
                         param=command_info["param"],
                         value=val

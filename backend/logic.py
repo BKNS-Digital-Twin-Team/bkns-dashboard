@@ -30,7 +30,7 @@ class ControlLogic:
         self.control_modes[session_id][component] = source
         return {"status": "OK"}
 
-    def process_command(self, session_id, component, param, value):
+    def process_command(self, session_id, component_id, param, value):
         # self.control_modes.setdefault(session_id, {})
         # self.control_modes[session_id].setdefault(component, "MODEL")
         
@@ -38,16 +38,19 @@ class ControlLogic:
         model = sessions.get(session_id)
         
         if model:
-            type_, id_ = component.rsplit("_", 1)
+            component_, id_ = component_id.rsplit("_", 1)
             id_ = int(id_)
-            if type_ == "pump":
-                if param == "na_start": model.control_pump(id_, True)
-                elif param == "na_stop": model.control_pump(id_, False)
-            elif type_ == "valve_out":
-                model.control_valve(f"in_{id_}", param == "valve_open")
-                model.control_valve(f"out_{id_}", param == "valve_open")
-            elif type_ == "oil_system":
-                model.control_oil_pump(id_, param == "oil_pump_start")
+            pump_name, param = param.split("_", 1)
+            
+            if component_ == "pump":
+                if param == "start": model.control_pump(id_, True)
+                elif param == "stop": model.control_pump(id_, False)
+            elif component_ == "oil_system":
+                if 'NA4_oil_motor_start': model.oil_pump_commands[id_]['start']
+                elif 'NA4_oil_motor_stop': model.oil_pump_commands[id_]['stop']
+            elif component_ == "valve_out":
+                if param == 'CMD_Zadv_Open': model.valves[f'out_{id_}'].target_position == 100.0
+                elif param == 'NA4_CMD_Zadv_Close': model.valves[f'out_{id_}'].target_position == 0.0
 
         return {"status": "OK"}
     
