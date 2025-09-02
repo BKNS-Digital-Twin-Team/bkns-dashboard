@@ -89,7 +89,7 @@ async def main():
     # === Создание переменных ===
     nodeid_map = {}
     for nodeid_str, info in OPC_NODE_MAPPING.items():
-        name = f"{info['component_id']}_{info['param']}"
+        name = f"{info['param']}"
         initial_value = False if info['mode'] in ["control", "status"] else 0.0
         data_type = ua.VariantType.Boolean if info['mode'] in ["control", "status"] else ua.VariantType.Float
         
