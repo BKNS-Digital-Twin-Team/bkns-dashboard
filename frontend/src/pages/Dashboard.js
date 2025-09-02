@@ -65,12 +65,9 @@ function Dashboard() {
 
       let totalInPressure = 0;
       let totalOutPressure = 0;
-      
-      for (const params of Object.values(grouped.pumps)) {
-          for (const [key, value] of Object.entries(params)) {
-              if (key.endsWith('pressure_in')) totalInPressure += value;
-              if (key.endsWith('pressure_out')) totalOutPressure += value;
-          }
+      for (const [pump,param] of Object.entries(grouped.pumps)){
+        if (param.pressure_in) totalInPressure += param.pressure_in;
+        if (param.pressure_out) totalOutPressure += param.pressure_out;
       }
       setInletPressure(totalInPressure);
       setOutletPressure(totalOutPressure);
