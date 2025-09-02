@@ -143,6 +143,7 @@ const ComponentCard = ({ name, data, sessionId, onUpdate }) => {
                 if (typeof value !== 'number' && typeof value !== 'boolean') return null;
 
                 const isOverridable = typeof value === 'number';
+                const paramKey =key.split('_').slice(1).join('_');
               
                 if (overrides[key] !== undefined && overrides[key] !== '') {
                   // Для данного ключа есть переопределение
@@ -158,11 +159,11 @@ const ComponentCard = ({ name, data, sessionId, onUpdate }) => {
                     ${isApplied ? 'accepted-overrided-row' : ''}`
                   } >
                       <td className="param-name">{key}:</td>
-                      <td>{PARAM_NAMES[key.split('_',1)]?.name}</td>
+                      <td>{PARAM_NAMES[paramKey]?.name}</td>
                       <td className={`param-value`}>
                         {typeof value === 'boolean' ? (value ? 'Да' : 'Нет') : value.toFixed(1)}
                       </td>
-                      <td>{PARAM_NAMES[key]?.unit}</td>
+                      <td>{PARAM_NAMES[paramKey]?.unit}</td>
                       {isOverridable && (
                         <td>
                         <input
