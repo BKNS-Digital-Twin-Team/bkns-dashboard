@@ -19,7 +19,7 @@ function Dashboard() {
   // Это важно для стабильной работы useEffect.
   const fetchData = useCallback(async () => {
     if (!sessionId) return;
-пше
+
     try {
       // Используем Promise.allSettled для параллельного выполнения всех запросов.
       // Он не прервется, если один из запросов завершится с ошибкой.
