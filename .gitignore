@@ -1,9 +1,10 @@
 #deploy
 wait-for-opc.sh
 sync-sessions.sh
+build-and-push.sh
 
 
 #service file
 __pycache__/
 *.pyc
-
+backend/api/__pycache__/

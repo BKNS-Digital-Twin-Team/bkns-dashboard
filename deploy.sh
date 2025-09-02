@@ -7,7 +7,7 @@ set -e  # Прерывать выполнение при ошибках
 
 # Параметры по умолчанию
 DEFAULT_SSH_KEY="/home/ars/my_private_key.pem"
-DEFAULT_REMOTE_DIR="~/bkns-digital-twin"
+DEFAULT_REMOTE_DIR="/home/ubuntu/bkns-dashboard"
 
 # Проверяем обязательный параметр - хост
 if [ $# -lt 1 ]; then
@@ -46,7 +46,8 @@ scp -i "$SSH_KEY" docker-compose.server.yml "$REMOTE_HOST:$REMOTE_DIR/"
 # Останавливаем и удаляем старые контейнеры, запускаем новые
 echo "Запускаем docker compose на сервере..."
 ssh -i "$SSH_KEY" "$REMOTE_HOST" "cd $REMOTE_DIR && sudo docker compose -f docker-compose.server.yml down"
-ssh -i "$SSH_KEY" "$REMOTE_HOST" "cd $REMOTE_DIR && sudo docker compose -f docker-compose.server.yml up -d --build"
+ssh -i "$SSH_KEY" "$REMOTE_HOST" "cd $REMOTE_DIR && sudo docker compose -f docker-compose.server.yml pull
+ssh -i "$SSH_KEY" "$REMOTE_HOST" "cd $REMOTE_DIR && sudo docker compose -f docker-compose.server.yml up -d --force-recreate"
 
 echo "Деплой завершен успешно!"
 echo "Приложение должно быть доступно на http://$REMOTE_HOST:8000"

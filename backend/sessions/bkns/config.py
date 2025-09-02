@@ -426,49 +426,52 @@ class BKNS:
         for pump_id, pump in enumerate(self.pumps):
             status[f'pump_{pump_id}']= {
                 # Основные параметры работы
-                # 'na_start': pump.na_start,
-                # 'na_stop': pump.na_stop,
-                'na_on': pump.na_on,
-                'na_off': pump.na_off,
-                'motor_current': pump.current_motor_i,
-                
-                # Параметры потока
-                'flow_rate': pump.NA_AI_Qmom_n,
+                # 'na4_start: pump.na_start,
+                # 'na4_stop': pump.na_stop,
+                f'{pump.name.lower()}_on': pump.na_on,
+                f'{pump.name.lower()}_off': pump.na_off,
+                f'{pump.name.lower()}_motor_i': pump.current_motor_i,
                 
                 # Давления
-                'pressure_in': self.pipes[f'in_{pump_id}'].p_out,
-                'pressure_out': pump.p_out,
+                f'{pump.name.lower()}_pressure_in': self.pipes[f'in_{pump_id}'].p_out,
+                f'{pump.name.lower()}_pressure_out': pump.p_out,
                 
                 # Температуры
-                'temp_bearing_1': pump.NA_AI_T_1_n,  # T1 - рабочий подшипник
-                'temp_bearing_2': pump.NA_AI_T_2_n,  # T2 - полевой подшипник
-                'temp_motor_1': pump.NA_AI_T_3_n,  # T3 - подшипник двигателя (рабочий)
-                'temp_motor_2': pump.NA_AI_T_4_n,  # T4 - подшипник двигателя (полевой)
-                'temp_water': pump.NA_AI_T_5_n,  #  для гидроопоры
+                f'{pump.name.upper()}_AI_T_1_n': pump.NA_AI_T_1_n,  # T1 - рабочий подшипник
                 
-                # Состояние механических частей
-                'cover_open': True,  # Его нет!!!
+                f'{pump.name.upper()}_DI_kojuh': True,  # Его нет!!! # Состояние механических частей
+                f'{pump.name.upper()}_AI_T_2_n': pump.NA_AI_T_2_n,  # T2 - полевой подшипник
+                f'{pump.name.upper()}_AI_T_3_n': pump.NA_AI_T_3_n,  # T3 - подшипник двигателя (рабочий)
+                f'{pump.name.upper()}_AI_T_4_n': pump.NA_AI_T_4_n,  # T4 - подшипник двигателя (полевой)
+                f'{pump.name.upper()}_AI_T_5_n': pump.NA_AI_T_5_n,  #  для гидроопоры
+                
+                # Параметры потока
+                f'{pump.name.upper()}_AI_Qmom_n': pump.NA_AI_Qmom_n,
             }
             
-            for id, oil_system in enumerate(self.oil_systems):
+            for id, oil_system in enumerate(self.oil_systems):                
                 status[f"oil_system_{id}"] = {
                 # Параметры маслосистемы
-                'oil_sys_running': oil_system.running,
-                'oil_sys_pressure_ok': oil_system.pressure_ok,
-                'oil_pressure': oil_system.pressure,
-                'temperature': oil_system.temperature
-            #     'oil_pump_start': self.oil_pump_commands[pump_id]['start'],
-            #     'oil_pump_stop': self.oil_pump_commands[pump_id]['stop'],
+                f'{oil_system.pump_name.upper()}_DI_FL_MS': oil_system.running,
+                f'{oil_system.pump_name.upper()}_DI_FL_MS_P': oil_system.pressure_ok,
+                f'{oil_system.pump_name.upper()}_AI_P_Oil_Nas_n': oil_system.pressure,
+            #   'NA4_oil_motor_start': self.oil_pump_commands[pump_id]['start'],
+            #   'NA4_oil_motor_stop': self.oil_pump_commands[pump_id]['stop'],
+            
+            #'temperature': oil_system.temperature - в управлении нет такого тега
             }
                 
             for valve_key, valve in self.valves.items():
                 if valve_key.startswith("out_"):
                     idx = valve_key[-1]
+                    
+                    pump_name = 'NA4' if idx == '0' else 'NA2' if idx == '1' else 'UNKNOWN'
+                    
                     status[f"valve_out_{idx}"]={  
-                        'valve_open': valve.state == "open",
-                        'valve_closed': valve.state == "closed"
-                        # 'valve_open_cmd': valve.target_position == 100.0,
-                        # 'valve_close_cmd': valve.target_position == 0.0,
+                        f'{pump_name.upper()}_DI_Zadv_Open': valve.state == "open",
+                        f'{pump_name.upper()}_DI_Zadv_Close': valve.state == "closed"
+                        # 'NA4_CMD_Zadv_Open': valve.target_position == 100.0,
+                        # 'NA4_CMD_Zadv_Close': valve.target_position == 0.0,
                     }
 
                 #Текущий режим работы насоса
