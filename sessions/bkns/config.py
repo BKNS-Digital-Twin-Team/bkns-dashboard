@@ -178,9 +178,9 @@ class BKNS:
 
         # Таймер для обновления состояния
         self.last_update_time = time.time()
-        self.update_system()
 
-    def update_system(self):
+
+    def  update_system(self):
         """
         Основной метод обновления состояния всей системы.
         Выполняется циклически для симуляции работы БКНС.
@@ -419,47 +419,109 @@ class BKNS:
         valve.control(command)
     
     
-    
     def get_status(self) -> Dict:
-        """
-        Возвращает состояние системы в структуре, ожидаемой OPC и flatten_status_for_opc().
-        """
         status = {}
-
+        
+        # Собираем данные по каждому насосу
         for pump_id, pump in enumerate(self.pumps):
-            status[f"pump_{pump_id}"] = {
-                "na_on": pump.na_on,
-                "na_off": pump.na_off,
-                "motor_current": pump.current_motor_i,
-                "pressure_in": self.pipes[f"in_{pump_id}"].p_out,
-                "pressure_out": pump.p_out,
-                "flow_rate": pump.NA_AI_Qmom_n,
-                "temp_bearing_1": pump.NA_AI_T_2_n,
-                "temp_bearing_2": pump.NA_AI_T_1_n,
-                "temp_motor_1": pump.NA_AI_T_3_n,
-                "temp_motor_2": pump.NA_AI_T_4_n,
-                "temp_water": pump.NA_AI_T_5_n,
-                "cover_open": True
+            status[f'pump_{pump_id}']= {
+                # Основные параметры работы
+                # 'na4_start: pump.na_start,
+                # 'na4_stop': pump.na_stop,
+                f'{pump.name.lower()}_on': pump.na_on,
+                f'{pump.name.lower()}_off': pump.na_off,
+                f'{pump.name.lower()}_motor_i': pump.current_motor_i,
+                
+                # Давления
+                f'{pump.name.lower()}_pressure_in': self.pipes[f'in_{pump_id}'].p_out,
+                f'{pump.name.lower()}_pressure_out': pump.p_out,
+                
+                # Температуры
+                f'{pump.name.upper()}_AI_T_1_n': pump.NA_AI_T_1_n,  # T1 - рабочий подшипник
+                
+                f'{pump.name.upper()}_DI_kojuh': True,  # Его нет!!! # Состояние механических частей
+                f'{pump.name.upper()}_AI_T_2_n': pump.NA_AI_T_2_n,  # T2 - полевой подшипник
+                f'{pump.name.upper()}_AI_T_3_n': pump.NA_AI_T_3_n,  # T3 - подшипник двигателя (рабочий)
+                f'{pump.name.upper()}_AI_T_4_n': pump.NA_AI_T_4_n,  # T4 - подшипник двигателя (полевой)
+                f'{pump.name.upper()}_AI_T_5_n': pump.NA_AI_T_5_n,  #  для гидроопоры
+                
+                # Параметры потока
+                f'{pump.name.upper()}_AI_Qmom_n': pump.NA_AI_Qmom_n,
             }
-
-        for i, oil_system in enumerate(self.oil_systems):
-            status[f"oil_system_{i}"] = {
-                "oil_sys_running": oil_system.running,
-                "oil_sys_pressure_ok": oil_system.pressure_ok,
-                "oil_pressure": oil_system.pressure,
-                "temperature": oil_system.temperature,
+            
+            for id, oil_system in enumerate(self.oil_systems):                
+                status[f"oil_system_{id}"] = {
+                # Параметры маслосистемы
+                f'{oil_system.pump_name.upper()}_DI_FL_MS': oil_system.running,
+                f'{oil_system.pump_name.upper()}_DI_FL_MS_P': oil_system.pressure_ok,
+                f'{oil_system.pump_name.upper()}_AI_P_Oil_Nas_n': oil_system.pressure,
+            #   'NA4_oil_motor_start': self.oil_pump_commands[pump_id]['start'],
+            #   'NA4_oil_motor_stop': self.oil_pump_commands[pump_id]['stop'],
+            
+            #'temperature': oil_system.temperature - в управлении нет такого тега
             }
+                
+            for valve_key, valve in self.valves.items():
+                if valve_key.startswith("out_"):
+                    idx = valve_key[-1]
+                    
+                    pump_name = 'NA4' if idx == '0' else 'NA2' if idx == '1' else 'UNKNOWN'
+                    
+                    status[f"valve_out_{idx}"]={  
+                        f'{pump_name.upper()}_DI_Zadv_Open': valve.state == "open",
+                        f'{pump_name.upper()}_DI_Zadv_Close': valve.state == "closed"
+                        # 'NA4_CMD_Zadv_Open': valve.target_position == 100.0,
+                        # 'NA4_CMD_Zadv_Close': valve.target_position == 0.0,
+                    }
 
-        for valve_key, valve in self.valves.items():
-            if valve_key.startswith("out_"):
-                idx = valve_key[-1]
-                status[f"valve_out_{idx}"] = {
-                    "valve_open": valve.state == "open",
-                    "valve_closed": valve.state == "closed"
-                }
+                #Текущий режим работы насоса
+                #'operation_mode': pump.get_operation_mode_name()
+            
+            
+
+        #         #Значения с датчиков
+        # for key, values in self.valve_sensor_values.items():
+        #     status['valve_sensors'][key] = {
+        #         'temperature_current_mA': values['temperature_current_mA'],
+        #         'pressure_current_mA': values['pressure_current_mA'],
+        #         'position_current_mA': values['position_current_mA']
+        #     }
+
+        # for pump_id, values in self.pump_sensor_values.items():
+        #     status['pump_sensors'][pump_id] = {
+        #         'bearing_work_temp_current_mA': values['bearing_work_temp_current_mA'],
+        #         'bearing_field_temp_current_mA': values['bearing_field_temp_current_mA'],
+        #         'motor_bearing_work_temp_current_mA': values['motor_bearing_work_temp_current_mA'],
+        #         'motor_bearing_field_temp_current_mA': values['motor_bearing_field_temp_current_mA'],
+        #         'hydro_support_temp_current_mA': values['hydro_support_temp_current_mA'],
+        #         'pressure_current_mA': values['pressure_current_mA'],
+        #         'motor_current_current_mA': values['motor_current_current_mA'],
+        #         'flow_current_mA': values['flow_current_mA'],
+        #         'shaft_speed_current_mA': values['shaft_speed_current_mA']
+        #     }
+
+        # for key, values in self.pipe_sensor_values.items():
+        #     status['pipe_sensors'][key] = {
+        #         'pressure_current_mA': values['pressure_current_mA'],
+        #         'temperature_current_mA': values['temperature_current_mA']
+        #     }        
+
+        # for i, values in self.oil_sensor_values.items():
+        #     status['oil_sensors'][i] = {
+        #         'flow_current_mA': values['flow_current_mA'],
+        #         'temperature_current_mA': values['temperature_current_mA'],
+        #     }
+
+        # for i, values in self.tank_sensor_values.items():
+        #     status['tank_sensors'][i] = {
+        #         'level_current_mA': values['level_current_mA'],
+        #         'density_current_mA': values['density_current_mA'],
+        #         'temperature_current_mA': values['temperature_current_mA'],
+        #         'flow_current_mA': values['flow_current_mA']
+        #     }
 
         return status
-
+    
     def _format_sensors_table(self, status: Dict) -> str:
         lines = []
         lines.append("=== Датчики (ток 4-20 мА) ===\n")
@@ -517,47 +579,51 @@ class BKNS:
         return "\n".join(lines)
 
 
-
-
     def __str__(self):
         """
         Возвращает текстовое представление состояния системы.
-        ИСПРАВЛЕННАЯ ВЕРСИЯ
+
         """
         status = self.get_status()
         output = []
         
-        output.append("=== Состояние БКНС ===\n")
+        # Общая информация
+        output.append("=== Состояние БКНС ===")
+        output.append(f"Входные параметры: Давление={status['main_inlet']['pressure']:.4f} МПа")
+        output.append(f"Выходные параметры: Давление={status['main_outlet']['pressure']:.4f} МПа\n")
 
         # Детальная информация по каждому насосу
-        for i in range(len(self.pumps)):
-            pump_key = f"pump_{i}"
-            oil_key = f"oil_system_{i}"
-            valve_key = f"valve_out_{i}"
-            
-            # Проверяем, есть ли данные в статусе, прежде чем их использовать
-            pump_data = status.get(pump_key, {})
-            oil_data = status.get(oil_key, {})
-            valve_data = status.get(valve_key, {})
-
+        for pump_name, pump_data in status['pumps'].items():
             output.append(
-                f"--- Агрегат {i} ---\n"
-                f"  Насос: {'ВКЛ' if pump_data.get('na_on') else 'ВЫКЛ'}\n"
-                f"  Ток двигателя: {pump_data.get('motor_current', 0):.2f} А\n"
-                f"  Давление вход: {pump_data.get('pressure_in', 0):.3f} МПа, "
-                f"выход: {pump_data.get('pressure_out', 0):.3f} МПа\n"
-                f"  Расход: {pump_data.get('flow_rate', 0):.3f} м³/с\n"
-                f"  Температуры (Подшипник/Мотор): {pump_data.get('temp_bearing_1', 0):.1f}°C / {pump_data.get('temp_motor_1', 0):.1f}°C\n"
-                f"  Маслосистема: {'РАБОТАЕТ' if oil_data.get('oil_sys_running') else 'ОСТАНОВЛЕНА'}\n"
-                f"  Давление масла: {oil_data.get('oil_pressure', 0):.2f} бар\n"
-                f"  Выходная задвижка: {'ОТКРЫТА' if valve_data.get('valve_open') else 'ЗАКРЫТА' if valve_data.get('valve_closed') else 'НЕИЗВЕСТНО'}\n"
+                f"Насос {pump_name} (ID {pump_data['pump_id']}):\n"
+                f"  Режим работы: {pump_data['operation_mode']}\n"
+                f"  Старт: {pump_data['start']}, Стоп: {pump_data['stop']}, "
+                f"Вкл: {pump_data['on']}, Выкл: {pump_data['off']}\n"
+                f"  Ток двигателя: {pump_data['motor_i']:.2f} А\n"
+                f"  Давление вход: {pump_data['pressure_in']:.3f} МПа, "
+                f"выход: {pump_data['pressure_out']:.3f} МПа\n"
+                f"  Температуры:\n"
+                f"    Подшипник (раб.): {pump_data['bearing_work_temp']:.1f}°C\n"
+                f"    Подшипник (поле): {pump_data['bearing_field_temp']:.1f}°C\n"
+                f"    Мотор (раб.): {pump_data['motor_bearing_work_temp']:.1f}°C\n"
+                f"    Мотор (поле): {pump_data['motor_bearing_field_temp']:.1f}°C\n"
+                f"    Гидроподшипник: {pump_data['hydro_support_temp']:.1f}°C\n"
+                f"  Маслосистема: {'запущена' if pump_data['oil_system_running'] else 'остановлена'}, "
+                f"Давление: {pump_data['oil_pressure']:.2f} бар ,"
+                f"Температура масла: {pump_data['oil_temperature']:.1f}°C\n"
+                f"  Команды маслонасоса: старт={pump_data['oil_pump_start_cmd']}, стоп={pump_data['oil_pump_stop_cmd']}\n"
+                f"  Входная задвижка: состояние: "
+                f"{'открыта' if pump_data['in_valve_open'] else 'закрыта' if pump_data['in_valve_closed'] else 'в движении'}, "
+                f"команды: открыть={pump_data['in_valve_open_cmd']}, закрыть={pump_data['in_valve_close_cmd']}\n"
+                f"  Выходная задвижка: состояние: "
+                f"{'открыта' if pump_data['out_valve_open'] else 'закрыта' if pump_data['out_valve_closed'] else 'в движении'}, "
+                f"команды: открыть={pump_data['out_valve_open_cmd']}, закрыть={pump_data['out_valve_close_cmd']}\n"
+                f"  Расход: {pump_data['flow_rate']:.3f} м³/с\n"
             )
         
-        # Этот метод для вывода датчиков в __str__ не нужен,
-        # так как get_status не возвращает эту информацию.
-        # Если захотите ее выводить, нужно будет добавить ее в get_status
-        # output.append(self._format_sensors_table(status)) 
-        
+        output.append("")
+        # Добавляем таблицу с датчиками
+        output.append(self._format_sensors_table(status))
         return "\n".join(output)
 
 import time
@@ -567,3 +633,15 @@ import sys
 #sys.stdout = log_file
 
 MODEL = BKNS()
+
+MODEL.control_valve('in_0', True)
+MODEL.control_valve('out_0', True)
+MODEL.control_valve('in_1', True)
+MODEL.control_valve('out_1', True)
+
+    # Запускаем маслонасосы для обоих насосов
+MODEL.control_oil_pump(0, True)
+MODEL.control_oil_pump(1, True)
+
+for pump in MODEL.pumps:
+    pump.na_start = True

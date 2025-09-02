@@ -27,7 +27,7 @@ if [ ! -f "$SSH_KEY" ]; then
 fi
 
 # Проверяем существование docker-compose файла
-if [ ! -f "docker-compose.server.yml" ]; then
+if [ ! -f "docker-compose.prod.yml" ]; then
     echo "Ошибка: Файл docker-compose.server.yml не найден в текущей директории"
     exit 1
 fi
@@ -40,14 +40,14 @@ echo "Удаленная директория: $REMOTE_DIR"
 ssh -i "$SSH_KEY" "$REMOTE_HOST" "mkdir -p $REMOTE_DIR"
 
 # Копируем docker-compose файл на сервер
-echo "Копируем docker-compose.server.yml на сервер..."
-scp -i "$SSH_KEY" docker-compose.server.yml "$REMOTE_HOST:$REMOTE_DIR/"
+echo "Копируем docker-compose.prod.yml на сервер..."
+scp -i "$SSH_KEY" docker-compose.prod.yml "$REMOTE_HOST:$REMOTE_DIR/"
 
 # Останавливаем и удаляем старые контейнеры, запускаем новые
 echo "Запускаем docker compose на сервере..."
-ssh -i "$SSH_KEY" "$REMOTE_HOST" "cd $REMOTE_DIR && sudo docker compose -f docker-compose.server.yml down"
-ssh -i "$SSH_KEY" "$REMOTE_HOST" "cd $REMOTE_DIR && sudo docker compose -f docker-compose.server.yml pull
-ssh -i "$SSH_KEY" "$REMOTE_HOST" "cd $REMOTE_DIR && sudo docker compose -f docker-compose.server.yml up -d --force-recreate"
+ssh -i "$SSH_KEY" "$REMOTE_HOST" "cd $REMOTE_DIR && sudo docker compose -f docker-compose.prod.yml down"
+ssh -i "$SSH_KEY" "$REMOTE_HOST" "cd $REMOTE_DIR && sudo docker compose -f docker-compose.prod.yml pull"
+ssh -i "$SSH_KEY" "$REMOTE_HOST" "cd $REMOTE_DIR && sudo docker compose -f docker-compose.prod.yml up -d --force-recreate"
 
 echo "Деплой завершен успешно!"
 echo "Приложение должно быть доступно на http://$REMOTE_HOST:8000"
