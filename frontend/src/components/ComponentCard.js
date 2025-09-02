@@ -6,29 +6,48 @@ import React, { useState } from 'react';
 import * as api from '../api/twinApi';
 // "Красивые" имена для параметров на русском языке
 const PARAM_NAMES = {
-  // Параметры насоса
-  'na_on': { name: 'Насос включен', unit: '' },
-  'na_off': { name: 'Насос выключен', unit: '' },
-  'motor_current': { name: 'Ток двигателя', unit: 'А' },
-  'flow_rate': { name: 'Расход', unit: 'м³/ч' },
+  // Команды управления насосом
+  'start': { name: 'Команда на запуск насоса', unit: '' },
+  'stop': { name: 'Команда на стоп насоса', unit: '' },
+  'on': { name: 'Насос включен', unit: '' },
+  'off': { name: 'Насос выключен', unit: '' },
+  
+  // Параметры двигателя
+  'motor_i': { name: 'Рабочий ток двигателя', unit: 'А' },
+  
+  // Давления
   'pressure_in': { name: 'Давление на входе', unit: 'бар' },
   'pressure_out': { name: 'Давление на выходе', unit: 'бар' },
-  'temp_bearing_1': { name: 'Температура подшипника 1', unit: '°C' },
-  'temp_bearing_2': { name: 'Температура подшипника 2', unit: '°C' },
-  'temp_motor_1': { name: 'Температура двигателя 1', unit: '°C' },
-  'temp_motor_2': { name: 'Температура двигателя 2', unit: '°C' },
-  'temp_water': { name: 'Температура воды', unit: '°C' },
-  'cover_open': { name: 'Крышка открыта', unit: '' },
+  'AI_P_Oil_Nas_n': { name: 'Давление в маслосистеме насоса', unit: 'бар' },
   
-  // Параметры задвижек
-  'valve_open': { name: 'Задвижка открыта', unit: '' },
-  'valve_closed': { name: 'Задвижка закрыта', unit: '' },
+  // Температуры насоса
+  'AI_T_1_n': { name: 'Температура рабочего подшипника насоса', unit: '°C' },
+  'AI_T_2_n': { name: 'Температура полевого подшипника насоса', unit: '°C' },
   
-  // Параметры маслосистемы
-  'oil_sys_running': { name: 'Маслосистема работает', unit: '' },
-  'oil_sys_pressure_ok': { name: 'Давление в норме', unit: '' },
-  'oil_pressure': { name: 'Давление масла', unit: 'бар' },
-  'temperature': { name: 'Температура', unit: '°C' }
+  // Температуры двигателя
+  'AI_T_3_n': { name: 'Температура рабочего подшипника двигателя', unit: '°C' },
+  'AI_T_4_n': { name: 'Температура полевого подшипника двигателя', unit: '°C' },
+  
+  // Температуры системы
+  'AI_T_5_n': { name: 'Температура воды в гидропяте', unit: '°C' },
+  
+  // Расход
+  'AI_Qmom_n': { name: 'Мгновенный расход жидкости', unit: 'м³/ч' },
+  
+  // Состояния и флаги
+  'DI_kojuh': { name: 'Открытие кожуха муфты', unit: '' },
+  'DI_FL_MS': { name: 'Флаг работы маслосистемы', unit: '' },
+  'DI_FL_MS_P': { name: 'Флаг достаточного давления в маслосистеме', unit: '' },
+  
+  // Задвижки
+  'DI_Zadv_Open': { name: 'Концевик открытия задвижки', unit: '' },
+  'DI_Zadv_Close': { name: 'Концевик закрытия задвижки', unit: '' },
+  'CMD_Zadv_Open': { name: 'Команда на открытие задвижки', unit: '' },
+  'CMD_Zadv_Close': { name: 'Команда на закрытие задвижки', unit: '' },
+  
+  // Управление маслосистемой
+  'oil_motor_start': { name: 'Команда на запуск маслонасоса', unit: '' },
+  'oil_motor_stop': { name: 'Команда на остановку маслонасоса', unit: '' }
 };
 
 
@@ -139,7 +158,7 @@ const ComponentCard = ({ name, data, sessionId, onUpdate }) => {
                     ${isApplied ? 'accepted-overrided-row' : ''}`
                   } >
                       <td className="param-name">{key}:</td>
-                      <td>{PARAM_NAMES[key]?.name}</td>
+                      <td>{PARAM_NAMES[key.split('_',1)]?.name}</td>
                       <td className={`param-value`}>
                         {typeof value === 'boolean' ? (value ? 'Да' : 'Нет') : value.toFixed(1)}
                       </td>
