@@ -77,14 +77,19 @@ last_values = {}
 async def main():
     server = Server()
     await server.init()
-    server.set_endpoint("opc.tcp://0.0.0.0:4840/freeopcua/server/")
+    server.set_endpoint("opc.tcp://0.0.0.0:4840")
 
-    uri = "http://example.org/my-opcua"
+    uri = "http://bkns/my-opcua"
+    
     idx = await server.register_namespace(uri)
-
+    
     # Главный объект
     objects = server.nodes.objects
-    control_obj = await objects.add_object(idx, "PumpControlSystem")
+    
+    # control_obj = await objects.add_object(idx, "PumpControlSystem")
+    na4 = await objects.add_object(idx, "NA4")
+    na2 = await objects.add_object(idx, "NA2")
+    
 
     # === Создание переменных ===
     nodeid_map = {}
@@ -94,7 +99,12 @@ async def main():
         data_type = ua.VariantType.Boolean if info['mode'] in ["control", "status"] else ua.VariantType.Float
         
         nodeid = ua.NodeId.from_string(nodeid_str)
-        var = await control_obj.add_variable(nodeid, name, initial_value, datatype=data_type)
+        
+        if name.startswith(('NA2', 'na2')):
+            var = await na2.add_variable(nodeid, name, initial_value, datatype=data_type)
+        else:
+            var = await na4.add_variable(nodeid, name, initial_value, datatype=data_type)
+        
         await var.set_writable()
 
         nodeid_map[nodeid_str] = var

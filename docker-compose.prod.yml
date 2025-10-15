@@ -5,7 +5,7 @@ services:
     ports:
       - "8021:8000"  # Также на 80 порту для фронта
     environment:
-      - OPC_SERVER_URL=opc.tcp://opc-server:4840/freeopcua/server/
+      - OPC_SERVER_URL=opc.tcp://opc-server:4840
       - DEV_MODE=false
       - STATIC_FILES_DIR=/app/build  # Статика внутри backend образа
     volumes:
