@@ -244,6 +244,7 @@ class CentrifugalPump:
 
         if self.na_stop and self.na_on:
             self.na_on = False
+            self.na_off = True
             self.na_stop = False
             self.reset_ramp()
 

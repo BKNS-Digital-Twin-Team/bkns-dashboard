@@ -375,8 +375,9 @@ class BKNS:
     def control_pump(self, pump_id: int, start: bool):
         """
         Управление насосом (включение/выключение)
-
+    
         """
+        print(f"[MathModel] Передан тег {pump_id} с параметром {start}")
         if pump_id not in [0, 1]:
             raise ValueError("Invalid pump_id. Must be 0 or 1.")
             
@@ -394,6 +395,7 @@ class BKNS:
         Управление маслонасосом, отдельное от основного насоса.
         start=True — запустить маслонасос, False — остановить.
         """
+        print(f"[MathModel] Передан тег {pump_id} с параметром {start}")
         if pump_id not in [0, 1]:
             raise ValueError("Invalid pump_id. Must be 0 or 1.")
 
@@ -634,14 +636,14 @@ import sys
 
 MODEL = BKNS()
 
-MODEL.control_valve('in_0', True)
-MODEL.control_valve('out_0', True)
-MODEL.control_valve('in_1', True)
-MODEL.control_valve('out_1', True)
+# MODEL.control_valve('in_0', True)
+# MODEL.control_valve('out_0', True)
+# MODEL.control_valve('in_1', True)
+# MODEL.control_valve('out_1', True)
 
-    # Запускаем маслонасосы для обоих насосов
-MODEL.control_oil_pump(0, True)
-MODEL.control_oil_pump(1, True)
+#     # Запускаем маслонасосы для обоих насосов
+# MODEL.control_oil_pump(0, True)
+# MODEL.control_oil_pump(1, True)
 
-for pump in MODEL.pumps:
-    pump.na_start = True
+# for pump in MODEL.pumps:
+#     pump.na_start = True

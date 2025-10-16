@@ -37,22 +37,34 @@ class ControlLogic:
         # Выполняем действия в модели
         model = sessions.get(session_id)
         
-        if model:
-            component_, id_ = component_id.rsplit("_", 1)
-            id_ = int(id_)
-            pump_name, param = param.split("_", 1)
+        if not model:
+            print(f"[ControlLogic] Модель не найдена для сессии {session_id}")
+            return {"status": "ERROR", "message": "Модель не найдена"}
+    
+        try:
+            component_parts = component_id.split("_")
+            # component_, id_ = component_id.rsplit("_", 1)
+            # id_ = int(id_)
+            # pump_name, param = param.split("_", 1)
             
-            if component_ == "pump":
-                if param == "start": model.control_pump(id_, True)
-                elif param == "stop": model.control_pump(id_, False)
-            elif component_ == "oil_system":
-                if 'NA4_oil_motor_start': model.oil_pump_commands[id_]['start']
-                elif 'NA4_oil_motor_stop': model.oil_pump_commands[id_]['stop']
-            elif component_ == "valve_out":
-                if param == 'CMD_Zadv_Open': model.valves[f'out_{id_}'].target_position == 100.0
-                elif param == 'NA4_CMD_Zadv_Close': model.valves[f'out_{id_}'].target_position == 0.0
-
-        return {"status": "OK"}
+            if component_parts[0] == "pump":
+                if param  == "na2_start": model.control_pump(int(component_parts[1]), True)
+                elif param == "na2_stop": model.control_pump(int(component_parts[1]), False)
+            
+            elif component_parts[0]  == "oil":
+                if param == 'NA2_oil_motor_start': model.control_oil_pump(int(component_parts[1]), True)
+                elif param == 'NA2_oil_motor_stop': model.control_oil_pump(int(component_parts[1]), False)
+            
+            elif component_parts[0]  == "valve_out":
+                if param == 'NA2_CMD_Zadv_Open': model.valves[f'out_{component_parts[1]}'].target_position == 100.0
+                elif param == 'NA2_CMD_Zadv_Close': model.valves[f'out_{component_parts[1]}'].target_position == 0.0
+            
+            print(f"[ControlLogic] В модель передан тег {component_parts} с параметром {param}")
+            return {"status": "OK"}
+        
+        except Exception as e:
+            print(f"[ControlLogic] Ошибка обработки команды: {e}")
+            return {"status":"ERROR", "message":str(e)}
     
     def send_command_to_opc(self, session_id, component, param, value):
         adapter = opc_adapters.get(session_id)

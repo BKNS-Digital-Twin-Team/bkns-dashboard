@@ -150,7 +150,7 @@ class OPCAdapter:
                 if command_info:
                     self.adapter.control_logic.process_command(
                         session_id=self.session_id,
-                        component=command_info["component_id"],
+                        component_id=command_info["component_id"],
                         param=command_info["param"],
                         value=val
                     )
