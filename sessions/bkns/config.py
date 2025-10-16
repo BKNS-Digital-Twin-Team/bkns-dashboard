@@ -406,9 +406,12 @@ class BKNS:
         """
         Управление задвижкой
         """
+        print(f"[MathModel] Задвижка {valve_key} с параметром {command_or_bool}")
         if valve_key not in self.valves:
             raise ValueError(f"Invalid valve lock key: {valve_key}")
+        
         valve = self.valves[valve_key]
+        
         if isinstance(command_or_bool, bool):
             command = "open" if command_or_bool else "close"
         elif isinstance(command_or_bool, str):

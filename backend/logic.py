@@ -55,9 +55,9 @@ class ControlLogic:
                 if param == 'NA2_oil_motor_start': model.control_oil_pump(int(component_parts[2]), True)
                 elif param == 'NA2_oil_motor_stop': model.control_oil_pump(int(component_parts[2]), False)
             
-            elif component_parts[0]  == "valve_out":
-                if param == 'NA2_CMD_Zadv_Open': model.valves[f'out_{component_parts[2]}'].target_position == 100.0
-                elif param == 'NA2_CMD_Zadv_Close': model.valves[f'out_{component_parts[2]}'].target_position == 0.0
+            elif component_parts[0]  == "valve":
+                if param == 'NA2_CMD_Zadv_Open': model.control_valve(f"{component_parts[1]}_{component_parts[2]}", True)
+                elif param == 'NA2_CMD_Zadv_Close': model.control_valve(f"{component_parts[1]}_{component_parts[2]}", False)
             
             print(f"[ControlLogic] В модель передан тег {component_parts} с параметром {param}")
             return {"status": "OK"}
