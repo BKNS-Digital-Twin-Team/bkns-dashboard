@@ -48,16 +48,16 @@ class ControlLogic:
             # pump_name, param = param.split("_", 1)
             
             if component_parts[0] == "pump":
-                if param  == "na2_start": model.control_pump(int(component_parts[1]), True)
-                elif param == "na2_stop": model.control_pump(int(component_parts[1]), False)
+                if (param  == "na2_start") or (param  == "na4_start"): model.control_pump(int(component_parts[1]), True)
+                elif (param == "na2_stop") or (param == "na4_stop" ): model.control_pump(int(component_parts[1]), False)
             
             elif component_parts[0]  == "oil":
-                if param == 'NA2_oil_motor_start': model.control_oil_pump(int(component_parts[2]), True)
-                elif param == 'NA2_oil_motor_stop': model.control_oil_pump(int(component_parts[2]), False)
+                if (param == 'NA2_oil_motor_start') or (param == 'NA4_oil_motor_start'): model.control_oil_pump(int(component_parts[2]), True)
+                elif (param == 'NA2_oil_motor_stop') or (param == 'NA4_oil_motor_stop'): model.control_oil_pump(int(component_parts[2]), False)
             
             elif component_parts[0]  == "valve":
-                if param == 'NA2_CMD_Zadv_Open': model.control_valve(f"{component_parts[1]}_{component_parts[2]}", True)
-                elif param == 'NA2_CMD_Zadv_Close': model.control_valve(f"{component_parts[1]}_{component_parts[2]}", False)
+                if (param == 'NA2_CMD_Zadv_Open') or (param == 'NA4_CMD_Zadv_Open'): model.control_valve(f"{component_parts[1]}_{component_parts[2]}", True)
+                elif (param == 'NA2_CMD_Zadv_Close') or (param == 'NA4_CMD_Zadv_Close') : model.control_valve(f"{component_parts[1]}_{component_parts[2]}", False)
             
             print(f"[ControlLogic] В модель передан тег {component_parts} с параметром {param}")
             return {"status": "OK"}
