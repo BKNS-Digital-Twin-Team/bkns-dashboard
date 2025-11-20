@@ -1,13 +1,15 @@
 
 services:
   backend:
-    image: kolchedan/bkns-dashboard-backend:latest
+    image: kolchedan/bkns-dashboard-backend:${BACKEND_TAG:-latest}
     ports:
       - "8021:8000"  # Также на 80 порту для фронта
     environment:
       - OPC_SERVER_URL=opc.tcp://opc-server:4840
       - DEV_MODE=false
       - STATIC_FILES_DIR=/app/build  # Статика внутри backend образа
+      - APP_VERSION=${BACKEND_TAG:-latest} 
+      - BUILD_DATE=${BUILD_DATE:-unknown}
     volumes:
       - ./sessions:/app/sessions:rw  # Папка с сессиями
     depends_on:
@@ -15,7 +17,7 @@ services:
     restart: unless-stopped
 
   opc-server:
-    image: kolchedan/bkns-dashboard-opc-server:latest
+    image: kolchedan/bkns-dashboard-opc-server:${OPC_TAG:-latest}
     ports:
       - "8020:4840"
     restart: unless-stopped
