@@ -192,9 +192,14 @@ def get_available_sessions():
             })
             
         return available_sessions
-        
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail=f"Директория сессий '{SESSIONS_DIR}' не найдена.")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ошибка при сканировании сессий: {e}")
-        
+
+@api_router.get("/simulation/version")
+async def get_version():
+    return {
+        "backend_version": os.getenv("APP_VERSION", "unknown"),
+        "build_date": os.getenv("BUILD_DATE", "unknown")
+    }

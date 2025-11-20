@@ -82,3 +82,7 @@ export const clearManualOverride = (sessionId, component, param) => {
     param,
   });
 };
+
+export const getAppVersion = () => {
+  return api.get('/simulation/version');
+};

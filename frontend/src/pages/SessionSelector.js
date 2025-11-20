@@ -10,6 +10,9 @@ const SessionSelector = () => {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
+  const [versionInfo, setVersionInfo] = useState(null);
+  const [versionLoading, setVersionLoading] = useState(true);
+
   useEffect(() => {
     const fetchSessions = async () => {
       try {
@@ -24,7 +27,21 @@ const SessionSelector = () => {
         setLoading(false);
       }
     };
+
+    const fetchVersion = async () => {
+      try {
+        const response = await api.getAppVersion();
+        setVersionInfo(response.data);
+      } catch (err) {
+        console.error("Ошибка при получении версии:", err);
+        // Не устанавливаем ошибку, так как версия не критична
+      } finally {
+        setVersionLoading(false);
+      }
+    };
+
     fetchSessions();
+    fetchVersion();
   }, []);
 
   const handleSessionClick = async (sessionName, status) => {
@@ -49,33 +66,55 @@ const SessionSelector = () => {
   if (error) return <div className="error-message">{error}</div>;
 
   return (
-    <div className="session-selector-container">
-      <h1 className="title">Выбор сессии симуляции</h1>
-      <div className="session-list">
-        {sessions.length > 0 ? (
-          sessions.map(session => (
-            <div
-              key={session.name}
-              className="session-card"
-              onClick={() => handleSessionClick(session.name, session.status)}
-            >
-              <h2 className="session-name">{session.name}</h2>
-              <div className="session-status">
-                Статус:
-                <span className={`status-badge status-${session.status}`}>
-                  {session.status === 'active' ? 'Активна' : 'Неактивна'}
-                </span>
+    <div>
+      <div className="session-selector-container">
+        <h1 className="title">Выбор сессии симуляции</h1>
+        <div className="session-list">
+          {sessions.length > 0 ? (
+            sessions.map(session => (
+              <div
+                key={session.name}
+                className="session-card"
+                onClick={() => handleSessionClick(session.name, session.status)}
+              >
+                <h2 className="session-name">{session.name}</h2>
+                <div className="session-status">
+                  Статус:
+                  <span className={`status-badge status-${session.status}`}>
+                    {session.status === 'active' ? 'Активна' : 'Неактивна'}
+                  </span>
+                </div>
+                <button className="enter-button">
+                  {session.status === 'active' ? 'Войти' : 'Загрузить и войти'}
+                </button>
               </div>
-              <button className="enter-button">
-                {session.status === 'active' ? 'Войти' : 'Загрузить и войти'}
-              </button>
-            </div>
-          ))
+            ))
+          ) : (
+            <p>Доступных сессий не найдено. Убедитесь, что они есть в папке `backend/sessions`.</p>
+          )}
+        </div>
+      </div>
+        <div className="version-info" style={{ 
+        marginTop: '20px', 
+        textAlign: 'center', 
+        color: '#666',
+        padding: '10px',
+        borderTop: '1px solid #eee'
+      }}>
+        {versionLoading ? (
+          <p>Загрузка информации о версии...</p>
+        ) : versionInfo ? (
+          <p>
+            Версия приложения: <strong>
+              {versionInfo.backend_version || versionInfo.version || 'неизвестна'}
+            </strong>
+            {versionInfo.build_date && ` (сборка от ${versionInfo.build_date})`}
+          </p>
         ) : (
-          <p>Доступных сессий не найдено. Убедитесь, что они есть в папке `backend/sessions`.</p>
+          <p>Версия приложения: неизвестна</p>
         )}
       </div>
-    </div>
+    </div>  
   );
 };
 

@@ -2,24 +2,25 @@
 set -e
 
 NAMESPACE="kolchedan"
-TIMESTAMP=$(date +%Y%m%d%H%M%S)
-BACKEND_IMAGE="$NAMESPACE/bkns-dashboard-backend:$TIMESTAMP"
+TIMESTAMP=$(date +%Y-%m-%d-%H-%M-%S)
+BUILD_DATE=$(date +%Y-%m-%d\ %H:%M:%S)
+
 BACKEND_LATEST="$NAMESPACE/bkns-dashboard-backend:latest"
-OPC_IMAGE="$NAMESPACE/bkns-dashboard-opc-server:$TIMESTAMP"
 OPC_LATEST="$NAMESPACE/bkns-dashboard-opc-server:latest"
 
-# Очистка предыдущих сборок
-echo "🧹 Очистка предыдущих сборок..."
-docker system prune -f
+BACKEND_IMAGE="$NAMESPACE/bkns-dashboard-backend:$TIMESTAMP"
+OPC_IMAGE="$NAMESPACE/bkns-dashboard-opc-server:$TIMESTAMP"
 
-# Сборка бэкенда с фронтендом
-echo "🔨 Сборка backend (Dockerfile.prod)..."
+# Сборка бэкенда
+echo "🔨 Собираем бэкенд..."
 docker build --no-cache -t $BACKEND_IMAGE -t $BACKEND_LATEST -f ./backend/Dockerfile.prod .
-echo "🔨 Сборка OPC-сервера..."
-docker build --no-cache -t $OPC_IMAGE -t $OPC_LATEST ./opc_server
+
+# Сборка OPC-сервера (исправлен путь к Dockerfile)
+echo "🔨 Собираем OPC-сервер..."
+docker build --no-cache -t $OPC_IMAGE -t $OPC_LATEST -f ./opc_server/Dockerfile.prod ./opc_server
 
 # Пуш образов
-echo "📤 Пушим backend..."
+echo "📤 Пушим бэкенд..."
 docker push $BACKEND_IMAGE
 docker push $BACKEND_LATEST
 
